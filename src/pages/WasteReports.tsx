@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Eye, Filter, CheckCircle, X, User, MapPin, Calendar } from "lucide-react";
+import { Eye, Filter, CheckCircle, X, User, MapPin, Calendar, FileText } from "lucide-react";
 import { mockWasteReports } from "../data/mockData";
 import { WasteReport } from "../types";
 import { useToast } from "@/hooks/use-toast";

@@ -31,15 +31,16 @@ const navigation = [
 ];
 
 export function AppSidebar() {
-  const { collapsed } = useSidebar();
+  const { open } = useSidebar();
   const location = useLocation();
+  const collapsed = !open;
 
   const isActive = (href: string) => {
     return location.pathname === href || (href !== "/" && location.pathname.startsWith(href));
   };
 
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-64"} collapsible>
+    <Sidebar className={collapsed ? "w-14" : "w-64"} collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center space-x-2">
           <div className="bg-accent rounded-lg p-2">
