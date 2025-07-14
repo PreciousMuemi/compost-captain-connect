@@ -328,7 +328,7 @@ export default function Payments() {
             </div>
           </div>
         </CardContent>
-      </div>
+      </Card>
 
       {/* Payments List */}
       <div className="space-y-4">
