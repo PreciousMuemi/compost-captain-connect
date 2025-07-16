@@ -1,1 +1,10 @@
 project_id = "qoplbnyngttwkiaovwyy"
+
+[functions.ussd-handler]
+verify_jwt = false
+
+[functions.mpesa-callback]
+verify_jwt = false
+
+[functions.mpesa-payment]
+verify_jwt = false
