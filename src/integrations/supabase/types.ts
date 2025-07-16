@@ -14,16 +14,275 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      customers: {
+        Row: {
+          created_at: string | null
+          discount_percentage: number | null
+          id: string
+          is_farmer: boolean | null
+          location: string | null
+          name: string
+          phone_number: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          discount_percentage?: number | null
+          id?: string
+          is_farmer?: boolean | null
+          location?: string | null
+          name: string
+          phone_number: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          discount_percentage?: number | null
+          id?: string
+          is_farmer?: boolean | null
+          location?: string | null
+          name?: string
+          phone_number?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      inventory: {
+        Row: {
+          id: string
+          last_updated: string | null
+          pellets_ready_kg: number | null
+          processed_manure_kg: number | null
+          raw_waste_kg: number | null
+        }
+        Insert: {
+          id?: string
+          last_updated?: string | null
+          pellets_ready_kg?: number | null
+          processed_manure_kg?: number | null
+          raw_waste_kg?: number | null
+        }
+        Update: {
+          id?: string
+          last_updated?: string | null
+          pellets_ready_kg?: number | null
+          processed_manure_kg?: number | null
+          raw_waste_kg?: number | null
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          created_at: string | null
+          customer_id: string
+          delivery_date: string | null
+          id: string
+          price_per_kg: number
+          quantity_kg: number
+          status: Database["public"]["Enums"]["order_status"] | null
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id: string
+          delivery_date?: string | null
+          id?: string
+          price_per_kg: number
+          quantity_kg: number
+          status?: Database["public"]["Enums"]["order_status"] | null
+          total_amount: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string
+          delivery_date?: string | null
+          id?: string
+          price_per_kg?: number
+          quantity_kg?: number
+          status?: Database["public"]["Enums"]["order_status"] | null
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          farmer_id: string | null
+          id: string
+          mpesa_transaction_id: string | null
+          order_id: string | null
+          payment_type: string
+          status: Database["public"]["Enums"]["payment_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          farmer_id?: string | null
+          id?: string
+          mpesa_transaction_id?: string | null
+          order_id?: string | null
+          payment_type: string
+          status?: Database["public"]["Enums"]["payment_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          farmer_id?: string | null
+          id?: string
+          mpesa_transaction_id?: string | null
+          order_id?: string | null
+          payment_type?: string
+          status?: Database["public"]["Enums"]["payment_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          full_name: string
+          id: string
+          location: string | null
+          phone_number: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          full_name: string
+          id?: string
+          location?: string | null
+          phone_number: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          full_name?: string
+          id?: string
+          location?: string | null
+          phone_number?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      waste_reports: {
+        Row: {
+          assigned_driver_id: string | null
+          collected_date: string | null
+          created_at: string | null
+          farmer_id: string
+          id: string
+          location: string | null
+          notes: string | null
+          quantity_kg: number
+          scheduled_pickup_date: string | null
+          status: Database["public"]["Enums"]["waste_status"] | null
+          updated_at: string | null
+          waste_type: Database["public"]["Enums"]["waste_type"]
+        }
+        Insert: {
+          assigned_driver_id?: string | null
+          collected_date?: string | null
+          created_at?: string | null
+          farmer_id: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          quantity_kg: number
+          scheduled_pickup_date?: string | null
+          status?: Database["public"]["Enums"]["waste_status"] | null
+          updated_at?: string | null
+          waste_type: Database["public"]["Enums"]["waste_type"]
+        }
+        Update: {
+          assigned_driver_id?: string | null
+          collected_date?: string | null
+          created_at?: string | null
+          farmer_id?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          quantity_kg?: number
+          scheduled_pickup_date?: string | null
+          status?: Database["public"]["Enums"]["waste_status"] | null
+          updated_at?: string | null
+          waste_type?: Database["public"]["Enums"]["waste_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waste_reports_assigned_driver_id_fkey"
+            columns: ["assigned_driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waste_reports_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["user_role"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      order_status: "pending" | "confirmed" | "delivered" | "cancelled"
+      payment_status: "pending" | "completed" | "failed"
+      user_role: "admin" | "dispatch" | "farmer" | "buyer"
+      waste_status: "reported" | "scheduled" | "collected" | "processed"
+      waste_type:
+        | "animal_manure"
+        | "coffee_husks"
+        | "rice_hulls"
+        | "maize_stalks"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +409,18 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      order_status: ["pending", "confirmed", "delivered", "cancelled"],
+      payment_status: ["pending", "completed", "failed"],
+      user_role: ["admin", "dispatch", "farmer", "buyer"],
+      waste_status: ["reported", "scheduled", "collected", "processed"],
+      waste_type: [
+        "animal_manure",
+        "coffee_husks",
+        "rice_hulls",
+        "maize_stalks",
+        "other",
+      ],
+    },
   },
 } as const
