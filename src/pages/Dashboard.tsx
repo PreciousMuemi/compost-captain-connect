@@ -1,22 +1,23 @@
 
+import { useEffect, useState } from "react";
 import { StatCard } from "../components/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Users, FileText, Package, DollarSign, Eye, CheckCircle, Clock } from "lucide-react";
-import { mockDashboardStats, mockWasteReports } from "../data/mockData";
-import { WasteReport } from "../types";
+import { supabase } from "@/integrations/supabase/client";
+import { Tables } from "@/integrations/supabase/types";
 
-const getStatusColor = (status: WasteReport['status']) => {
+const getStatusColor = (status: string) => {
   switch (status) {
-    case 'pending':
+    case 'reported':
       return 'bg-yellow-100 text-yellow-800';
-    case 'assigned':
+    case 'scheduled':
       return 'bg-blue-100 text-blue-800';
     case 'collected':
       return 'bg-green-100 text-green-800';
-    case 'rejected':
-      return 'bg-red-100 text-red-800';
+    case 'processed':
+      return 'bg-purple-100 text-purple-800';
     default:
       return 'bg-gray-100 text-gray-800';
   }
@@ -40,8 +41,80 @@ const formatDate = (dateString: string) => {
 };
 
 export default function Dashboard() {
-  const stats = mockDashboardStats;
-  const recentReports = mockWasteReports.slice(0, 5);
+  const [stats, setStats] = useState({
+    totalFarmers: 0,
+    wasteReportsToday: 0,
+    wasteCollectedKg: 0,
+    totalPaidKsh: 0,
+    pendingReports: 0
+  });
+  const [recentReports, setRecentReports] = useState<any[]>([]);
+  
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+  
+  const fetchDashboardData = async () => {
+    try {
+      // Fetch farmers count
+      const { count: farmersCount } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'farmer');
+      
+      // Fetch today's reports count
+      const today = new Date().toISOString().split('T')[0];
+      const { count: todayReportsCount } = await supabase
+        .from('waste_reports')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', `${today}T00:00:00.000Z`)
+        .lte('created_at', `${today}T23:59:59.999Z`);
+      
+      // Fetch total waste collected
+      const { data: collectedData } = await supabase
+        .from('waste_reports')
+        .select('quantity_kg')
+        .eq('status', 'collected');
+      
+      const totalWaste = collectedData?.reduce((sum, report) => sum + report.quantity_kg, 0) || 0;
+      
+      // Fetch total payments
+      const { data: paymentsData } = await supabase
+        .from('payments')
+        .select('amount')
+        .eq('status', 'completed');
+      
+      const totalPaid = paymentsData?.reduce((sum, payment) => sum + payment.amount, 0) || 0;
+      
+      // Fetch pending reports count
+      const { count: pendingCount } = await supabase
+        .from('waste_reports')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'reported');
+      
+      // Fetch recent reports
+      const { data: reportsData } = await supabase
+        .from('waste_reports')
+        .select(`
+          *,
+          farmer:profiles(full_name, phone_number)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      setStats({
+        totalFarmers: farmersCount || 0,
+        wasteReportsToday: todayReportsCount || 0,
+        wasteCollectedKg: totalWaste,
+        totalPaidKsh: totalPaid,
+        pendingReports: pendingCount || 0
+      });
+      
+      setRecentReports(reportsData || []);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -98,21 +171,21 @@ export default function Dashboard() {
                 <div key={report.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-gray-900">{report.farmerName}</span>
-                      <Badge className={getStatusColor(report.status)}>
+                      <span className="font-medium text-gray-900">{report.farmer?.full_name || 'Unknown'}</span>
+                      <Badge className={getStatusColor(report.status || 'reported')}>
                         {report.status}
                       </Badge>
                     </div>
                     <div className="text-sm text-gray-600">
-                      {report.quantity}kg {report.wasteType.replace('_', ' ')} • {report.location}
+                      {report.quantity_kg}kg {report.waste_type.replace('_', ' ')} • {report.location || 'No location'}
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
-                      {formatDate(report.reportedAt)}
+                      {formatDate(report.created_at || '')}
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="font-medium text-gray-900">
-                      {formatCurrency(report.estimatedValue)}
+                      {formatCurrency(report.quantity_kg * 50)}
                     </div>
                   </div>
                 </div>

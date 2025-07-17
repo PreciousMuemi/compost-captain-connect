@@ -1,19 +1,17 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { DollarSign, Plus, Calendar, User, CreditCard, CheckCircle, Clock, X } from "lucide-react";
-import { mockPayments, mockFarmers } from "../data/mockData";
-import { Payment } from "../types";
+import { DollarSign, Plus, Calendar, User, CreditCard, CheckCircle, Clock, X, Smartphone } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Tables } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
+import { MpesaPaymentModal } from "@/components/MpesaPaymentModal";
 
-const getStatusColor = (status: Payment['status']) => {
+const getStatusColor = (status: string) => {
   switch (status) {
     case 'pending':
       return 'bg-yellow-100 text-yellow-800 border-yellow-200';
@@ -23,19 +21,6 @@ const getStatusColor = (status: Payment['status']) => {
       return 'bg-red-100 text-red-800 border-red-200';
     default:
       return 'bg-gray-100 text-gray-800 border-gray-200';
-  }
-};
-
-const getMethodIcon = (method: Payment['paymentMethod']) => {
-  switch (method) {
-    case 'mpesa':
-      return '📱';
-    case 'bank_transfer':
-      return '🏦';
-    case 'cash':
-      return '💵';
-    default:
-      return '💳';
   }
 };
 
@@ -58,84 +43,97 @@ const formatDate = (dateString: string) => {
 };
 
 export default function Payments() {
-  const [payments, setPayments] = useState<Payment[]>(mockPayments);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [farmers, setFarmers] = useState<Tables<'profiles'>[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [methodFilter, setMethodFilter] = useState<string>("all");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isMpesaModalOpen, setIsMpesaModalOpen] = useState(false);
+  const [selectedFarmer, setSelectedFarmer] = useState<{ id: string; name: string } | null>(null);
   const { toast } = useToast();
 
-  // New payment form state
-  const [newPayment, setNewPayment] = useState({
-    farmerId: "",
-    amount: "",
-    paymentMethod: "mpesa" as Payment['paymentMethod'],
-    transactionId: "",
-    notes: "",
-  });
+  useEffect(() => {
+    fetchPayments();
+    fetchFarmers();
+  }, []);
 
-  const filteredPayments = payments.filter((payment) => {
-    const matchesSearch = payment.farmerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         payment.transactionId?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || payment.status === statusFilter;
-    const matchesMethod = methodFilter === "all" || payment.paymentMethod === methodFilter;
-    
-    return matchesSearch && matchesStatus && matchesMethod;
-  });
+  const fetchPayments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('payments')
+        .select(`
+          *,
+          farmer:profiles(full_name, phone_number)
+        `)
+        .order('created_at', { ascending: false });
 
-  const handleCreatePayment = () => {
-    if (!newPayment.farmerId || !newPayment.amount) {
+      if (error) throw error;
+      setPayments(data || []);
+    } catch (error) {
+      console.error('Error fetching payments:', error);
       toast({
         title: "Error",
-        description: "Please fill in all required fields",
+        description: "Failed to fetch payments",
         variant: "destructive",
       });
-      return;
     }
-
-    const farmer = mockFarmers.find(f => f.id === newPayment.farmerId);
-    if (!farmer) return;
-
-    const payment: Payment = {
-      id: (payments.length + 1).toString(),
-      farmerId: newPayment.farmerId,
-      farmerName: farmer.name,
-      wasteReportId: "manual-" + Date.now(),
-      amount: parseFloat(newPayment.amount),
-      paymentMethod: newPayment.paymentMethod,
-      status: 'pending',
-      transactionId: newPayment.transactionId || undefined,
-      paidAt: new Date().toISOString(),
-      notes: newPayment.notes || undefined,
-    };
-
-    setPayments(prev => [payment, ...prev]);
-    setNewPayment({
-      farmerId: "",
-      amount: "",
-      paymentMethod: "mpesa",
-      transactionId: "",
-      notes: "",
-    });
-    setIsDialogOpen(false);
-    
-    toast({
-      title: "Payment Created",
-      description: `Payment of ${formatCurrency(payment.amount)} created for ${farmer.name}`,
-    });
   };
 
-  const updatePaymentStatus = (paymentId: string, newStatus: Payment['status']) => {
-    setPayments(prev => prev.map(payment => 
-      payment.id === paymentId 
-        ? { ...payment, status: newStatus }
-        : payment
-    ));
+  const fetchFarmers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'farmer')
+        .order('full_name');
+
+      if (error) throw error;
+      setFarmers(data || []);
+    } catch (error) {
+      console.error('Error fetching farmers:', error);
+    }
+  };
+
+  const filteredPayments = payments.filter((payment) => {
+    const farmerName = payment.farmer?.full_name || '';
+    const matchesSearch = farmerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         payment.mpesa_transaction_id?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || payment.status === statusFilter;
     
-    toast({
-      title: "Status Updated",
-      description: `Payment status has been updated to ${newStatus}`,
-    });
+    return matchesSearch && matchesStatus;
+  });
+
+  const handleMpesaPayment = (farmerId: string, farmerName: string) => {
+    setSelectedFarmer({ id: farmerId, name: farmerName });
+    setIsMpesaModalOpen(true);
+  };
+
+  const updatePaymentStatus = async (paymentId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('payments')
+        .update({ status: newStatus as any })
+        .eq('id', paymentId);
+
+      if (error) throw error;
+
+      setPayments(prev => prev.map(payment => 
+        payment.id === paymentId 
+          ? { ...payment, status: newStatus as any }
+          : payment
+      ));
+      
+      toast({
+        title: "Status Updated",
+        description: `Payment status has been updated to ${newStatus}`,
+      });
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update payment status",
+        variant: "destructive",
+      });
+    }
   };
 
   // Calculate stats
@@ -152,90 +150,25 @@ export default function Payments() {
           <p className="text-gray-600 mt-1">Manage farmer payments and track transaction history.</p>
         </div>
         
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
+        <Select value={farmers.length > 0 ? farmers[0].id : ""} onValueChange={(farmerId) => {
+          const farmer = farmers.find(f => f.id === farmerId);
+          if (farmer) handleMpesaPayment(farmer.id, farmer.full_name);
+        }}>
+          <SelectTrigger asChild>
             <Button className="bg-primary hover:bg-primary/90">
-              <Plus className="h-4 w-4 mr-2" />
-              New Payment
+              <Smartphone className="h-4 w-4 mr-2" />
+              Send M-Pesa Payment
             </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Create New Payment</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="farmer">Farmer</Label>
-                <Select value={newPayment.farmerId} onValueChange={(value) => setNewPayment(prev => ({ ...prev, farmerId: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select farmer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mockFarmers.map(farmer => (
-                      <SelectItem key={farmer.id} value={farmer.id}>
-                        {farmer.name} - {farmer.phoneNumber}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="amount">Amount (KSh)</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  placeholder="0"
-                  value={newPayment.amount}
-                  onChange={(e) => setNewPayment(prev => ({ ...prev, amount: e.target.value }))}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="method">Payment Method</Label>
-                <Select value={newPayment.paymentMethod} onValueChange={(value: Payment['paymentMethod']) => setNewPayment(prev => ({ ...prev, paymentMethod: value }))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="mpesa">M-Pesa</SelectItem>
-                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                    <SelectItem value="cash">Cash</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="transactionId">Transaction ID (Optional)</Label>
-                <Input
-                  id="transactionId"
-                  placeholder="Enter transaction ID"
-                  value={newPayment.transactionId}
-                  onChange={(e) => setNewPayment(prev => ({ ...prev, transactionId: e.target.value }))}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="notes">Notes (Optional)</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Additional notes..."
-                  value={newPayment.notes}
-                  onChange={(e) => setNewPayment(prev => ({ ...prev, notes: e.target.value }))}
-                />
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <Button onClick={handleCreatePayment} className="flex-1">
-                  Create Payment
-                </Button>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="flex-1">
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="" disabled>Select farmer</SelectItem>
+            {farmers.map(farmer => (
+              <SelectItem key={farmer.id} value={farmer.id}>
+                {farmer.full_name} - {farmer.phone_number}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Stats Cards */}
@@ -314,17 +247,6 @@ export default function Payments() {
                 </SelectContent>
               </Select>
               
-              <Select value={methodFilter} onValueChange={setMethodFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Method" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Methods</SelectItem>
-                  <SelectItem value="mpesa">M-Pesa</SelectItem>
-                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                  <SelectItem value="cash">Cash</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
         </CardContent>
@@ -336,27 +258,27 @@ export default function Payments() {
           <Card key={payment.id} className="bg-white shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="text-2xl">{getMethodIcon(payment.paymentMethod)}</div>
+              <div className="flex items-center space-x-4">
+                  <div className="text-2xl">📱</div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-gray-900">{payment.farmerName}</h3>
-                      <Badge className={getStatusColor(payment.status)}>
+                      <h3 className="font-semibold text-gray-900">{payment.farmer?.full_name || 'Unknown'}</h3>
+                      <Badge className={getStatusColor(payment.status || 'pending')}>
                         {payment.status}
                       </Badge>
                     </div>
                     <div className="flex items-center text-sm text-gray-600 mt-1 gap-4">
                       <span className="flex items-center">
                         <Calendar className="h-4 w-4 mr-1" />
-                        {formatDate(payment.paidAt)}
+                        {formatDate(payment.created_at || '')}
                       </span>
                       <span className="flex items-center">
                         <CreditCard className="h-4 w-4 mr-1" />
-                        {payment.paymentMethod.replace('_', ' ')}
+                        {payment.payment_type.replace('_', ' ')}
                       </span>
-                      {payment.transactionId && (
+                      {payment.mpesa_transaction_id && (
                         <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
-                          {payment.transactionId}
+                          {payment.mpesa_transaction_id}
                         </span>
                       )}
                     </div>
@@ -394,11 +316,6 @@ export default function Payments() {
                 </div>
               </div>
               
-              {payment.notes && (
-                <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600">{payment.notes}</p>
-                </div>
-              )}
             </CardContent>
           </Card>
         ))}
@@ -413,6 +330,14 @@ export default function Payments() {
           </CardContent>
         </Card>
       )}
+      
+      <MpesaPaymentModal
+        isOpen={isMpesaModalOpen}
+        onClose={() => setIsMpesaModalOpen(false)}
+        farmerId={selectedFarmer?.id}
+        farmerName={selectedFarmer?.name}
+        onSuccess={fetchPayments}
+      />
     </div>
   );
 }
