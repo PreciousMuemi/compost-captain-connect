@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import WasteReports from "./pages/WasteReports";
 import Farmers from "./pages/Farmers";
 import Payments from "./pages/Payments";
+import Analytics from "./pages/Analytics";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -52,6 +53,7 @@ const AppRoutes = () => {
         <Route path="/waste-reports" element={<ProtectedRoute><WasteReports /></ProtectedRoute>} />
         <Route path="/farmers" element={<ProtectedRoute><Farmers /></ProtectedRoute>} />
         <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
+        <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
         <Route path="/auth" element={<Navigate to="/" replace />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

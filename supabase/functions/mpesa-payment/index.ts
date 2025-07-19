@@ -34,9 +34,26 @@ const handler = async (req: Request): Promise<Response> => {
     const passkey = Deno.env.get('MPESA_PASSKEY');
     const baseUrl = Deno.env.get('MPESA_BASE_URL') || 'https://sandbox.safaricom.co.ke';
 
+    console.log('M-Pesa credentials check:', {
+      hasConsumerKey: !!consumerKey,
+      hasConsumerSecret: !!consumerSecret,
+      hasBusinessShortCode: !!businessShortCode,
+      businessShortCode: businessShortCode,
+      hasPasskey: !!passkey
+    });
+
     if (!consumerKey || !consumerSecret || !businessShortCode || !passkey) {
-      return new Response(JSON.stringify({ error: 'M-Pesa credentials not configured' }), {
-        status: 500,
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'M-Pesa credentials not configured properly',
+        details: {
+          hasConsumerKey: !!consumerKey,
+          hasConsumerSecret: !!consumerSecret,
+          hasBusinessShortCode: !!businessShortCode,
+          hasPasskey: !!passkey
+        }
+      }), {
+        status: 400,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
     }
@@ -102,6 +119,8 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     const stkData = await stkResponse.json();
+    
+    console.log('M-Pesa STK Response:', stkData);
 
     if (stkData.ResponseCode === '0') {
       // Update payment with checkout request ID
@@ -129,7 +148,8 @@ const handler = async (req: Request): Promise<Response> => {
 
       return new Response(JSON.stringify({
         success: false,
-        error: stkData.errorMessage || 'Payment initiation failed'
+        error: stkData.errorMessage || stkData.ResponseDescription || 'Payment initiation failed',
+        details: stkData
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },

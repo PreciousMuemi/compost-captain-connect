@@ -9,6 +9,7 @@ import {
   Menu
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Sidebar,
   SidebarContent,
@@ -22,18 +23,39 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const navigation = [
-  { name: "Dashboard", href: "/", icon: Home },
-  { name: "Waste Reports", href: "/waste-reports", icon: FileText },
-  { name: "Farmers", href: "/farmers", icon: Users },
-  { name: "Payments", href: "/payments", icon: CreditCard },
-  { name: "Analytics", href: "/analytics", icon: TrendingUp },
-];
+// Navigation items based on user role
+const getNavigationItems = (userRole: string) => {
+  const baseItems = [
+    { name: "Dashboard", href: "/", icon: Home, roles: ['farmer', 'admin', 'dispatch'] },
+  ];
+
+  if (userRole === 'farmer') {
+    return [
+      ...baseItems,
+      { name: "My Reports", href: "/waste-reports", icon: FileText, roles: ['farmer'] },
+    ];
+  }
+
+  if (userRole === 'admin' || userRole === 'dispatch') {
+    return [
+      ...baseItems,
+      { name: "Waste Reports", href: "/waste-reports", icon: FileText, roles: ['admin', 'dispatch'] },
+      { name: "Farmers", href: "/farmers", icon: Users, roles: ['admin', 'dispatch'] },
+      { name: "Payments", href: "/payments", icon: CreditCard, roles: ['admin', 'dispatch'] },
+      { name: "Analytics", href: "/analytics", icon: TrendingUp, roles: ['admin', 'dispatch'] },
+    ];
+  }
+
+  return baseItems;
+};
 
 export function AppSidebar() {
   const { open } = useSidebar();
+  const { profile } = useAuth();
   const location = useLocation();
   const collapsed = !open;
+  
+  const navigation = getNavigationItems(profile?.role || 'farmer');
 
   const isActive = (href: string) => {
     return location.pathname === href || (href !== "/" && location.pathname.startsWith(href));
