@@ -42,8 +42,9 @@ const handler = async (req: Request): Promise<Response> => {
       // Main menu
       response = `CON Welcome to Captain Compost
 1. Report Waste
-2. Check Status
-3. My Payments`;
+2. Check Status  
+3. My Payments
+4. Buy Products`;
     } else if (inputs[0] === '1') {
       // Report waste flow
       if (level === 1) {
@@ -177,6 +178,86 @@ We will contact you for pickup.`;
         }
       } else {
         response = `END No profile found. Please report waste first.`;
+      }
+    } else if (inputs[0] === '4') {
+      // Buy products flow
+      if (level === 1) {
+        response = `CON Select product:
+1. Processed Manure (KES 50/kg)
+2. Organic Pellets (KES 80/kg)
+3. Compost Mix (KES 60/kg)`;
+      } else if (level === 2) {
+        response = `CON Enter quantity in KG:`;
+      } else if (level === 3) {
+        response = `CON Enter delivery location:`;
+      } else if (level === 4) {
+        // Process the product order
+        const products = ['', 'processed_manure', 'organic_pellets', 'compost_mix'];
+        const prices = [0, 50, 80, 60];
+        const productIndex = parseInt(inputs[1]);
+        const product = products[productIndex];
+        const pricePerKg = prices[productIndex];
+        const quantity = parseFloat(inputs[2]);
+        const location = inputs[3];
+
+        if (!product || isNaN(quantity) || quantity <= 0) {
+          response = `END Invalid input. Please try again.`;
+        } else {
+          const totalAmount = quantity * pricePerKg;
+          
+          // Find or create customer profile
+          let { data: customer } = await supabase
+            .from('customers')
+            .select('id')
+            .eq('phone_number', phoneNumber)
+            .single();
+
+          if (!customer) {
+            const { data: newCustomer, error: customerError } = await supabase
+              .from('customers')
+              .insert({
+                name: `Customer ${phoneNumber}`,
+                phone_number: phoneNumber,
+                location: location
+              })
+              .select('id')
+              .single();
+
+            if (customerError) {
+              console.error('Customer creation error:', customerError);
+              response = `END Error creating customer profile. Please try again.`;
+            } else {
+              customer = newCustomer;
+            }
+          }
+
+          if (customer) {
+            // Create order
+            const { error: orderError } = await supabase
+              .from('orders')
+              .insert({
+                customer_id: customer.id,
+                quantity_kg: quantity,
+                price_per_kg: pricePerKg,
+                total_amount: totalAmount,
+                status: 'pending'
+              });
+
+            if (orderError) {
+              console.error('Order creation error:', orderError);
+              response = `END Error creating order. Please try again.`;
+            } else {
+              response = `END Order placed successfully!
+Product: ${product.replace('_', ' ')}
+Quantity: ${quantity}kg
+Total: KES ${totalAmount}
+Location: ${location}
+
+Pay via M-Pesa: 0700000000
+We will deliver within 2-3 days.`;
+            }
+          }
+        }
       }
     } else {
       response = `END Invalid option. Please try again.`;
