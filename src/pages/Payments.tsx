@@ -154,11 +154,9 @@ export default function Payments() {
           const farmer = farmers.find(f => f.id === farmerId);
           if (farmer) handleMpesaPayment(farmer.id, farmer.full_name);
         }}>
-          <SelectTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90">
-              <Smartphone className="h-4 w-4 mr-2" />
-              Send M-Pesa Payment
-            </Button>
+          <SelectTrigger className="bg-primary hover:bg-primary/90 text-primary-foreground border-primary">
+            <Smartphone className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Send M-Pesa Payment" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="" disabled>Select farmer</SelectItem>
