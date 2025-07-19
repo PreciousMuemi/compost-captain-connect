@@ -150,7 +150,7 @@ export default function Payments() {
           <p className="text-gray-600 mt-1">Manage farmer payments and track transaction history.</p>
         </div>
         
-        <Select value={farmers.length > 0 ? farmers[0].id : ""} onValueChange={(farmerId) => {
+        <Select value="" onValueChange={(farmerId) => {
           const farmer = farmers.find(f => f.id === farmerId);
           if (farmer) handleMpesaPayment(farmer.id, farmer.full_name);
         }}>
@@ -159,7 +159,6 @@ export default function Payments() {
             <SelectValue placeholder="Send M-Pesa Payment" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="" disabled>Select farmer</SelectItem>
             {farmers.map(farmer => (
               <SelectItem key={farmer.id} value={farmer.id}>
                 {farmer.full_name} - {farmer.phone_number}
