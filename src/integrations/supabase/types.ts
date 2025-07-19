@@ -119,6 +119,7 @@ export type Database = {
         Row: {
           amount: number
           created_at: string | null
+          customer_id: string | null
           farmer_id: string | null
           id: string
           mpesa_transaction_id: string | null
@@ -130,6 +131,7 @@ export type Database = {
         Insert: {
           amount: number
           created_at?: string | null
+          customer_id?: string | null
           farmer_id?: string | null
           id?: string
           mpesa_transaction_id?: string | null
@@ -141,6 +143,7 @@ export type Database = {
         Update: {
           amount?: number
           created_at?: string | null
+          customer_id?: string | null
           farmer_id?: string | null
           id?: string
           mpesa_transaction_id?: string | null
@@ -150,6 +153,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "payments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payments_farmer_id_fkey"
             columns: ["farmer_id"]

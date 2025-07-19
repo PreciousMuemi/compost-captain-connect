@@ -6,7 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
-import Dashboard from "./pages/Dashboard";
+import FarmerDashboard from "./pages/FarmerDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import WasteReports from "./pages/WasteReports";
 import Farmers from "./pages/Farmers";
 import Payments from "./pages/Payments";
@@ -31,7 +32,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const AppRoutes = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, profile } = useAuth();
   
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
@@ -46,10 +47,18 @@ const AppRoutes = () => {
     );
   }
 
+  // Role-based dashboard routing
+  const DashboardComponent = () => {
+    if (profile?.role === 'farmer') {
+      return <FarmerDashboard />;
+    }
+    return <AdminDashboard />;
+  };
+
   return (
     <Layout>
       <Routes>
-        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/" element={<ProtectedRoute><DashboardComponent /></ProtectedRoute>} />
         <Route path="/waste-reports" element={<ProtectedRoute><WasteReports /></ProtectedRoute>} />
         <Route path="/farmers" element={<ProtectedRoute><Farmers /></ProtectedRoute>} />
         <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
