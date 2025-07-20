@@ -46,16 +46,34 @@ const handler = async (req: Request): Promise<Response> => {
       hasPasskey: !!passkey
     });
 
-    if (!consumerKey || !consumerSecret || !businessShortCode || !passkey) {
+    // For sandbox testing - provide better error handling
+    if (!consumerKey || !consumerSecret) {
       return new Response(JSON.stringify({ 
         success: false,
-        error: 'M-Pesa credentials not configured properly',
-        details: {
-          hasConsumerKey: !!consumerKey,
-          hasConsumerSecret: !!consumerSecret,
-          hasBusinessShortCode: !!businessShortCode,
-          hasPasskey: !!passkey
-        }
+        error: 'M-Pesa consumer credentials missing. Please configure MPESA_CONSUMER_KEY and MPESA_CONSUMER_SECRET in Supabase secrets.',
+        guidance: 'Get these from Safaricom Daraja Portal: https://developer.safaricom.co.ke/'
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+
+    if (!businessShortCode || businessShortCode === 'N/A') {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Business Short Code not available. In sandbox, you can use 174379 as test shortcode.',
+        guidance: 'For production, you need a real Business Short Code from Safaricom.'
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+
+    if (!passkey) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'M-Pesa passkey missing. For sandbox use: bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919',
+        guidance: 'For production, get your passkey from Safaricom Daraja Portal.'
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },

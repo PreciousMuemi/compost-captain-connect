@@ -5,14 +5,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/StatCard";
-import { Plus, TrendingUp, Package, Clock } from "lucide-react";
+import { FarmerPaymentModal } from "@/components/FarmerPaymentModal";
+import { Plus, TrendingUp, Package, Clock, ShoppingCart, Leaf } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 interface FarmerStats {
   totalReports: number;
   totalEarnings: number;
   pendingReports: number;
   completedReports: number;
+  totalOrders: number;
+  totalSpent: number;
 }
 
 interface WasteReport {
@@ -24,16 +28,30 @@ interface WasteReport {
   location: string;
 }
 
+interface Product {
+  id: string;
+  name: string;
+  price_per_kg: number;
+  available_kg: number;
+  description: string;
+}
+
 export default function FarmerDashboard() {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [stats, setStats] = useState<FarmerStats>({
     totalReports: 0,
     totalEarnings: 0,
     pendingReports: 0,
     completedReports: 0,
+    totalOrders: 0,
+    totalSpent: 0,
   });
   const [recentReports, setRecentReports] = useState<WasteReport[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,19 +62,33 @@ export default function FarmerDashboard() {
 
   const fetchFarmerData = async () => {
     try {
-      // Fetch waste reports
+      // Fetch waste reports for this farmer only
       const { data: reports } = await supabase
         .from('waste_reports')
         .select('*')
         .eq('farmer_id', profile?.id)
         .order('created_at', { ascending: false });
 
-      // Fetch payments
+      // Fetch payments to this farmer (waste purchases)
       const { data: payments } = await supabase
         .from('payments')
         .select('amount')
         .eq('farmer_id', profile?.id)
         .eq('status', 'completed');
+
+      // Get customer record for this farmer (to check orders as buyer)
+      const { data: customerRecord } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('phone_number', profile?.phone_number)
+        .single();
+
+      // Fetch orders by this farmer (as customer/buyer)
+      const { data: orders } = await supabase
+        .from('orders')
+        .select('total_amount, status')
+        .eq('customer_id', customerRecord?.id || '')
+        .in('status', ['confirmed', 'delivered']);
 
       if (reports) {
         const totalReports = reports.length;
@@ -68,15 +100,47 @@ export default function FarmerDashboard() {
           pendingReports,
           completedReports,
           totalEarnings: payments?.reduce((sum, p) => sum + p.amount, 0) || 0,
+          totalOrders: orders?.length || 0,
+          totalSpent: orders?.reduce((sum, o) => sum + o.total_amount, 0) || 0,
         });
         
         setRecentReports(reports.slice(0, 5));
+      }
+
+      // Fetch available products from inventory
+      const { data: inventory } = await supabase
+        .from('inventory')
+        .select('processed_manure_kg, pellets_ready_kg')
+        .single();
+
+      if (inventory) {
+        setProducts([
+          {
+            id: 'processed_manure',
+            name: 'Processed Organic Manure',
+            price_per_kg: 50,
+            available_kg: inventory.processed_manure_kg || 0,
+            description: 'High-quality processed organic manure perfect for farming'
+          },
+          {
+            id: 'pellets',
+            name: 'Organic Fertilizer Pellets',
+            price_per_kg: 80,
+            available_kg: inventory.pellets_ready_kg || 0,
+            description: 'Premium organic fertilizer pellets for enhanced crop yield'
+          }
+        ]);
       }
     } catch (error) {
       console.error('Error fetching farmer data:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBuyProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setShowPaymentModal(true);
   };
 
   const getStatusColor = (status: string) => {
@@ -106,7 +170,7 @@ export default function FarmerDashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatCard
           title="Total Reports"
           value={stats.totalReports}
@@ -120,18 +184,63 @@ export default function FarmerDashboard() {
           description="Awaiting collection"
         />
         <StatCard
-          title="Completed"
-          value={stats.completedReports}
-          icon={TrendingUp}
-          description="Successfully collected"
-        />
-        <StatCard
           title="Total Earnings"
           value={`KES ${stats.totalEarnings.toLocaleString()}`}
           icon={TrendingUp}
           description="From waste sales"
         />
+        <StatCard
+          title="Product Orders"
+          value={stats.totalOrders}
+          icon={ShoppingCart}
+          description="Orders placed"
+        />
+        <StatCard
+          title="Total Spent"
+          value={`KES ${stats.totalSpent.toLocaleString()}`}
+          icon={Package}
+          description="On products"
+        />
       </div>
+
+      {/* Available Products */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Leaf className="h-5 w-5" />
+            Buy Organic Products
+          </CardTitle>
+          <CardDescription>Purchase processed manure and fertilizer pellets</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {products.map((product) => (
+              <div key={product.id} className="border rounded-lg p-4 space-y-3">
+                <div>
+                  <h3 className="font-medium">{product.name}</h3>
+                  <p className="text-sm text-muted-foreground">{product.description}</p>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-lg font-bold">KES {product.price_per_kg}/kg</p>
+                    <p className="text-sm text-muted-foreground">
+                      {product.available_kg} kg available
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={() => handleBuyProduct(product)}
+                    disabled={product.available_kg === 0}
+                    className="flex items-center gap-2"
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                    Buy Now
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Recent Reports */}
       <Card>
@@ -189,6 +298,23 @@ export default function FarmerDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Product Purchase Modal */}
+      <FarmerPaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setSelectedProduct(null);
+        }}
+        product={selectedProduct}
+        onSuccess={() => {
+          toast({
+            title: "Order Placed",
+            description: "Your product order has been placed successfully!",
+          });
+          fetchFarmerData(); // Refresh data
+        }}
+      />
     </div>
   );
 }
