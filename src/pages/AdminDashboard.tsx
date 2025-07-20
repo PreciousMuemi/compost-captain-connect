@@ -18,13 +18,18 @@ interface AdminStats {
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [stats, setStats] = useState<AdminStats>({
+  const [stats, setStats] = useState({
     totalFarmers: 0,
     totalWasteReports: 0,
     totalPayments: 0,
     pendingReports: 0,
     totalOrders: 0,
     totalRevenue: 0,
+    rawWasteKg: 0,
+    processedManureKg: 0,
+    pelletsReadyKg: 0,
+    totalBuyers: 0,
+    farmerBuyers: 0,
   });
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +56,23 @@ export default function AdminDashboard() {
       const totalPayments = payments?.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.amount, 0) || 0;
       const totalRevenue = orders?.filter(o => o.status === 'confirmed' || o.status === 'delivered').reduce((sum, o) => sum + o.total_amount, 0) || 0;
 
+      // Fetch inventory (assuming only one row)
+      const { data: inventoryData } = await supabase
+        .from('inventory')
+        .select('raw_waste_kg, processed_manure_kg, pellets_ready_kg')
+        .single();
+
+      // Fetch all buyers (from customers table)
+      const { data: buyers } = await supabase
+        .from('customers')
+        .select('id');
+
+      // Fetch farmer-buyers (is_farmer = true in customers table)
+      const { data: farmerBuyers } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('is_farmer', true);
+
       setStats({
         totalFarmers: farmers?.length || 0,
         totalWasteReports: reports?.length || 0,
@@ -58,6 +80,11 @@ export default function AdminDashboard() {
         pendingReports,
         totalOrders: orders?.length || 0,
         totalRevenue,
+        rawWasteKg: inventoryData?.raw_waste_kg || 0,
+        processedManureKg: inventoryData?.processed_manure_kg || 0,
+        pelletsReadyKg: inventoryData?.pellets_ready_kg || 0,
+        totalBuyers: buyers?.length || 0,
+        farmerBuyers: farmerBuyers?.length || 0,
       });
 
       // Recent activity - combine reports and orders
@@ -138,6 +165,36 @@ export default function AdminDashboard() {
           icon={TrendingUp}
           description="From product sales"
         />
+        <StatCard
+          title="Raw Waste Inventory"
+          value={`${stats.rawWasteKg.toLocaleString()} kg`}
+          icon={Package}
+          trend={{ value: 0, isPositive: true }}
+        />
+        <StatCard
+          title="Processed Manure"
+          value={`${stats.processedManureKg.toLocaleString()} kg`}
+          icon={Package}
+          trend={{ value: 0, isPositive: true }}
+        />
+        <StatCard
+          title="Pellets Ready"
+          value={`${stats.pelletsReadyKg.toLocaleString()} kg`}
+          icon={Package}
+          trend={{ value: 0, isPositive: true }}
+        />
+        <StatCard
+          title="Total Buyers"
+          value={stats.totalBuyers}
+          icon={Users}
+          description="All customers (buyers)"
+        />
+        <StatCard
+          title="Farmer-Buyers"
+          value={stats.farmerBuyers}
+          icon={Users}
+          description="Farmers who are also buyers"
+        />
       </div>
 
       {/* Recent Activity */}
@@ -192,6 +249,38 @@ export default function AdminDashboard() {
           Analytics
         </Button>
       </div>
+
+      {/* Summary Table for Admins */}
+      <Card>
+        <CardHeader>
+          <CardTitle>User Pools Overview</CardTitle>
+          <CardDescription>Breakdown of farmers, buyers, and overlaps</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ul>
+            <li>Total Farmers: {stats.totalFarmers}</li>
+            <li>Total Buyers: {stats.totalBuyers}</li>
+            <li>Farmer-Buyers: {stats.farmerBuyers}</li>
+          </ul>
+        </CardContent>
+      </Card>
+
+      {/* Policy Recap for Admins (for documentation or UI) */}
+      <Card>
+        <CardHeader>
+          <CardTitle>User Role Policy Recap</CardTitle>
+          <CardDescription>Breakdown of farmers, buyers, and overlaps</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p>
+            **User Role Policy Recap:**  
+            - All farmers are in the `profiles` table.  
+            - All buyers are in the `customers` table.  
+            - If a farmer is also a buyer, their `customers.is_farmer` is `true`.  
+            - Farmer-buyers get discounts and are included in both pools.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

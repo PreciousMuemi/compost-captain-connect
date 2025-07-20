@@ -46,7 +46,10 @@ export default function Dashboard() {
     wasteReportsToday: 0,
     wasteCollectedKg: 0,
     totalPaidKsh: 0,
-    pendingReports: 0
+    pendingReports: 0,
+    rawWasteKg: 0,
+    processedManureKg: 0,
+    pelletsReadyKg: 0,
   });
   const [recentReports, setRecentReports] = useState<any[]>([]);
   
@@ -101,13 +104,22 @@ export default function Dashboard() {
         `)
         .order('created_at', { ascending: false })
         .limit(5);
-      
+
+      // Fetch inventory (assuming only one row)
+      const { data: inventoryData } = await supabase
+        .from('inventory')
+        .select('raw_waste_kg, processed_manure_kg, pellets_ready_kg')
+        .single();
+
       setStats({
         totalFarmers: farmersCount || 0,
         wasteReportsToday: todayReportsCount || 0,
         wasteCollectedKg: totalWaste,
         totalPaidKsh: totalPaid,
-        pendingReports: pendingCount || 0
+        pendingReports: pendingCount || 0,
+        rawWasteKg: inventoryData?.raw_waste_kg || 0,
+        processedManureKg: inventoryData?.processed_manure_kg || 0,
+        pelletsReadyKg: inventoryData?.pellets_ready_kg || 0,
       });
       
       setRecentReports(reportsData || []);
@@ -150,6 +162,24 @@ export default function Dashboard() {
           value={formatCurrency(stats.totalPaidKsh)}
           icon={DollarSign}
           trend={{ value: 22, isPositive: true }}
+        />
+        <StatCard
+          title="Raw Waste Inventory"
+          value={`${stats.rawWasteKg.toLocaleString()} kg`}
+          icon={Package}
+          trend={{ value: 0, isPositive: true }}
+        />
+        <StatCard
+          title="Processed Manure"
+          value={`${stats.processedManureKg.toLocaleString()} kg`}
+          icon={Package}
+          trend={{ value: 0, isPositive: true }}
+        />
+        <StatCard
+          title="Pellets Ready"
+          value={`${stats.pelletsReadyKg.toLocaleString()} kg`}
+          icon={Package}
+          trend={{ value: 0, isPositive: true }}
         />
       </div>
 
