@@ -62,12 +62,18 @@ export default function FarmerDashboard() {
 
   const fetchFarmerData = async () => {
     try {
+      console.log('Profile data:', profile);
+      console.log('Profile ID:', profile?.id);
+      
       // Fetch waste reports for this farmer only
-      const { data: reports } = await supabase
+      const { data: reports, error: reportsError } = await supabase
         .from('waste_reports')
         .select('*')
         .eq('farmer_id', profile?.id)
         .order('created_at', { ascending: false });
+
+      console.log('Reports query result:', reports);
+      console.log('Reports error:', reportsError);
 
       // Fetch payments to this farmer (waste purchases)
       const { data: payments } = await supabase
