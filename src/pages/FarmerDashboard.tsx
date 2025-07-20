@@ -81,7 +81,7 @@ export default function FarmerDashboard() {
         .from('customers')
         .select('id')
         .eq('phone_number', profile?.phone_number)
-        .single();
+        .maybeSingle();
 
       // Fetch orders by this farmer (as customer/buyer)
       const { data: orders } = await supabase
