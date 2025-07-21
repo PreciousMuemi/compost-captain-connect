@@ -23,49 +23,23 @@ const Auth = () => {
     let mounted = true;
 
     const getInitialSession = async () => {
-      console.log("Fetching initial session...");
+      console.log("🔑 Auth: Fetching initial session...");
       const { data: { session } } = await supabase.auth.getSession();
-      console.log("Session fetched:", session);
+      console.log("🔑 Auth: Session fetched:", session?.user?.id);
       
-      if (session) {
-        // Get user role from metadata
-        const userRole = session.user.user_metadata?.role;
-        
-        // Redirect based on role
-        if (userRole === 'admin') {
-          navigate('/admin-dashboard');
-        } else if (userRole === 'dispatch') {
-          navigate('/dispatch-dashboard');
-        } else if (userRole === 'farmer') {
-          navigate('/farmer-dashboard');
-        } else {
-          // Default fallback
-          navigate('/');
-        }
-        
-        console.log(`Redirecting to: ${getRedirectPath(userRole)}`);
+      if (session && mounted) {
+        console.log("🔑 Auth: User is already logged in, redirecting...");
+        navigate('/');
       }
     };
 
     getInitialSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state changed:", event, session);
-      if (session) {
-        // Get user role from metadata
-        const userRole = session.user.user_metadata?.role;
-        
-        // Redirect based on role
-        if (userRole === 'admin') {
-          navigate('/admin-dashboard');
-        } else if (userRole === 'dispatch') {
-          navigate('/dispatch-dashboard');
-        } else if (userRole === 'farmer') {
-          navigate('/farmer-dashboard');
-        } else {
-          // Default fallback
-          navigate('/');
-        }
+      console.log("🔑 Auth: Auth state changed:", event, session?.user?.id);
+      if (session && mounted) {
+        console.log("🔑 Auth: User logged in, redirecting to dashboard...");
+        navigate('/');
       }
     });
 
@@ -75,19 +49,6 @@ const Auth = () => {
     };
   }, [navigate]);
 
-  // Helper function to get redirect path based on role
-  const getRedirectPath = (role: string | null | undefined) => {
-    switch (role) {
-      case 'admin':
-        return '/admin-dashboard';
-      case 'dispatch':
-        return '/dispatch-dashboard';
-      case 'farmer':
-        return '/farmer-dashboard';
-      default:
-        return '/';
-    }
-  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();

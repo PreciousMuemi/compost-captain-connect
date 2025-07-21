@@ -68,25 +68,32 @@
     );
   }
 
-  function DashboardSelector() {
-    const { profile, loading } = useAuth();
+function DashboardSelector() {
+  const { profile, loading } = useAuth();
+  
+  console.log("🚀 DashboardSelector - loading:", loading, "profile:", profile);
+  
+  if (loading) {
+    console.log("🚀 Still loading, showing spinner");
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+      </div>
+    );
+  }
     
-    if (loading) {
-      return (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
-        </div>
-      );
-    }
-    
-    // Redirect to role-specific routes
-    switch (profile?.role) {
-      case 'farmer':
-        return <Navigate to="/farmer" replace />;
-      case 'admin':
-        return <Navigate to="/admin" replace />;
-      case 'dispatch':
-        return <Navigate to="/dispatch" replace />;
+  // Redirect to role-specific routes
+  console.log("🚀 Profile role:", profile?.role);
+  switch (profile?.role) {
+    case 'farmer':
+      console.log("🚀 Redirecting to farmer dashboard");
+      return <Navigate to="/farmer" replace />;
+    case 'admin':
+      console.log("🚀 Redirecting to admin dashboard");
+      return <Navigate to="/admin" replace />;
+    case 'dispatch':
+      console.log("🚀 Redirecting to dispatch dashboard");
+      return <Navigate to="/dispatch" replace />;
       default:
         return (
           <div className="flex flex-col items-center justify-center min-h-screen p-6">

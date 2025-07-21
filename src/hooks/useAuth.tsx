@@ -34,17 +34,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Get initial session
     const getInitialSession = async () => {
       try {
-        console.log("AuthProvider: Getting initial session");
+        console.log("🔥 AuthProvider: Getting initial session");
         const { data: { session } } = await supabase.auth.getSession();
+        console.log("🔥 Session fetched:", session?.user?.id);
         setUser(session?.user || null);
         
         if (session?.user) {
+          console.log("🔥 User found, fetching profile...");
           await fetchProfile(session.user.id);
         } else {
+          console.log("🔥 No session, setting loading false");
           setLoading(false);
         }
       } catch (error) {
-        console.error("Error getting initial session:", error);
+        console.error("🔥 Error getting initial session:", error);
         setLoading(false);
       }
     };
@@ -54,12 +57,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log("AuthProvider: Auth state changed:", event);
+        console.log("🔥 AuthProvider: Auth state changed:", event, session?.user?.id);
         setUser(session?.user || null);
         
         if (session?.user) {
+          console.log("🔥 Auth change: User found, fetching profile...");
           await fetchProfile(session.user.id);
         } else {
+          console.log("🔥 Auth change: No user, clearing state");
           setProfile(null);
           setLoading(false);
           
@@ -77,7 +82,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchProfile = async (userId: string) => {
     try {
-      console.log("AuthProvider: Fetching profile for user:", userId);
+      console.log("🔥 AuthProvider: Fetching profile for user:", userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('id, full_name, phone_number, location, role')
@@ -85,16 +90,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .maybeSingle();
 
       if (error) {
-        console.error("Error fetching profile:", error);
+        console.error("🔥 Error fetching profile:", error);
         setProfile(null);
-      } else {
-        console.log("AuthProvider: Profile fetched:", data);
+      } else if (data) {
+        console.log("🔥 AuthProvider: Profile fetched successfully:", data);
         setProfile(data as Profile);
+      } else {
+        console.log("🔥 AuthProvider: No profile found for user");
+        setProfile(null);
       }
     } catch (error) {
-      console.error("Error in fetchProfile:", error);
+      console.error("🔥 Error in fetchProfile:", error);
       setProfile(null);
     } finally {
+      console.log("🔥 Setting loading to false");
       setLoading(false);
     }
   };
