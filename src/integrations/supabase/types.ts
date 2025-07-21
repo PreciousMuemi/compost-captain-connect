@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      collections: {
+        Row: {
+          collection_date: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          quantity: number | null
+          status: string | null
+          updated_at: string | null
+          waste_report_id: string
+        }
+        Insert: {
+          collection_date?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          quantity?: number | null
+          status?: string | null
+          updated_at?: string | null
+          waste_report_id: string
+        }
+        Update: {
+          collection_date?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          quantity?: number | null
+          status?: string | null
+          updated_at?: string | null
+          waste_report_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collections_waste_report_id_fkey"
+            columns: ["waste_report_id"]
+            isOneToOne: false
+            referencedRelation: "waste_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           created_at: string | null
@@ -47,11 +88,36 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory: {
+        Row: {
+          id: string
+          last_updated: string | null
+          pellets_ready_kg: number | null
+          processed_manure_kg: number | null
+          raw_waste_kg: number | null
+        }
+        Insert: {
+          id?: string
+          last_updated?: string | null
+          pellets_ready_kg?: number | null
+          processed_manure_kg?: number | null
+          raw_waste_kg?: number | null
+        }
+        Update: {
+          id?: string
+          last_updated?: string | null
+          pellets_ready_kg?: number | null
+          processed_manure_kg?: number | null
+          raw_waste_kg?: number | null
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           created_at: string | null
           customer_id: string
           delivery_date: string | null
+          farmer_id: string | null
           id: string
           price_per_kg: number
           quantity_kg: number
@@ -63,6 +129,7 @@ export type Database = {
           created_at?: string | null
           customer_id: string
           delivery_date?: string | null
+          farmer_id?: string | null
           id?: string
           price_per_kg: number
           quantity_kg: number
@@ -74,6 +141,7 @@ export type Database = {
           created_at?: string | null
           customer_id?: string
           delivery_date?: string | null
+          farmer_id?: string | null
           id?: string
           price_per_kg?: number
           quantity_kg?: number
@@ -87,6 +155,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

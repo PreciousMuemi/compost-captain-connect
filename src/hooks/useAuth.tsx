@@ -31,51 +31,68 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Get initial session
-    const getInitialSession = async () => {
+    let mounted = true;
+
+    const initAuth = async () => {
       try {
-        console.log("🔥 AuthProvider: Getting initial session");
+        console.log("🔥 AuthProvider: Initializing auth...");
+        
+        // Get initial session
         const { data: { session } } = await supabase.auth.getSession();
         console.log("🔥 Session fetched:", session?.user?.id);
-        setUser(session?.user || null);
         
-        if (session?.user) {
-          console.log("🔥 User found, fetching profile...");
-          await fetchProfile(session.user.id);
-        } else {
-          console.log("🔥 No session, setting loading false");
-          setLoading(false);
+        if (mounted) {
+          setUser(session?.user || null);
+          
+          if (session?.user) {
+            console.log("🔥 User found, fetching profile...");
+            await fetchProfile(session.user.id);
+          } else {
+            console.log("🔥 No session, setting loading false");
+            setLoading(false);
+          }
         }
       } catch (error) {
-        console.error("🔥 Error getting initial session:", error);
-        setLoading(false);
+        console.error("🔥 Error initializing auth:", error);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
-    getInitialSession();
+    initAuth();
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log("🔥 AuthProvider: Auth state changed:", event, session?.user?.id);
-        setUser(session?.user || null);
         
-        if (session?.user) {
-          console.log("🔥 Auth change: User found, fetching profile...");
-          await fetchProfile(session.user.id);
-        } else {
-          console.log("🔥 Auth change: No user, clearing state");
-          setProfile(null);
-          setLoading(false);
+        if (mounted) {
+          setUser(session?.user || null);
           
-          if (event === 'SIGNED_OUT') {
-            navigate('/auth');
+          if (session?.user) {
+            console.log("🔥 Auth change: User found, fetching profile...");
+            // Use setTimeout to avoid potential deadlocks
+            setTimeout(() => {
+              if (mounted) {
+                fetchProfile(session.user.id);
+              }
+            }, 0);
+          } else {
+            console.log("🔥 Auth change: No user, clearing state");
+            setProfile(null);
+            setLoading(false);
+            
+            if (event === 'SIGNED_OUT') {
+              navigate('/auth');
+            }
           }
         }
       }
     );
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, [navigate]);
@@ -96,7 +113,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log("🔥 AuthProvider: Profile fetched successfully:", data);
         setProfile(data as Profile);
       } else {
-        console.log("🔥 AuthProvider: No profile found for user");
+        console.log("🔥 AuthProvider: No profile found for user - this might be a new signup");
         setProfile(null);
       }
     } catch (error) {
