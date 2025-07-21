@@ -90,6 +90,20 @@ export default function AdminDashboard() {
     }
   };
 
+  const assignRiderToOrder = async (orderId: string, riderId: string) => {
+    const { error } = await supabase
+      .from('orders')
+      .update({ assigned_rider: riderId, status: 'confirmed' })
+      .eq('id', orderId);
+
+    if (error) {
+      console.error('Assign error:', error);
+      alert('Failed to assign rider: ' + error.message);
+    } else {
+      fetchAdminData();
+    }
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
