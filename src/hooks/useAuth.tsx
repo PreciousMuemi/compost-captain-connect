@@ -1,111 +1,113 @@
 import { useState, useEffect, createContext, useContext } from 'react';
-import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
+
+interface Profile {
+  id: string;
+  full_name: string;
+  email: string;
+  phone_number: string;
+  role: 'farmer' | 'admin' | 'dispatch';
+}
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  profile: any | null;
+  user: any | null;
+  profile: Profile | null;
   loading: boolean;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
-  session: null,
   profile: null,
   loading: true,
   signOut: async () => {},
 });
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
-
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<any | null>(null);
+  const [user, setUser] = useState<any | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    let mounted = true;
-
+    // Get initial session
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!mounted) return;
-      
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
+      try {
+        console.log("AuthProvider: Getting initial session");
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(session?.user || null);
         
-        if (mounted) {
-          setProfile(profileData);
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+        } else {
+          setLoading(false);
         }
-      } else {
-        setProfile(null);
-      }
-      
-      if (mounted) {
+      } catch (error) {
+        console.error("Error getting initial session:", error);
         setLoading(false);
       }
     };
 
+    getInitialSession();
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!mounted) return;
-        
-        setSession(session);
-        setUser(session?.user ?? null);
+        console.log("AuthProvider: Auth state changed:", event);
+        setUser(session?.user || null);
         
         if (session?.user) {
-          // Fetch user profile
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
-          
-          if (mounted) {
-            setProfile(profileData);
-          }
+          await fetchProfile(session.user.id);
         } else {
           setProfile(null);
-        }
-        
-        if (mounted) {
           setLoading(false);
+          
+          if (event === 'SIGNED_OUT') {
+            navigate('/auth');
+          }
         }
       }
     );
 
-    getInitialSession();
-
     return () => {
-      mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
+
+  const fetchProfile = async (userId: string) => {
+    try {
+      console.log("AuthProvider: Fetching profile for user:", userId);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, phone_number, role')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching profile:", error);
+        setProfile(null);
+      } else {
+        console.log("AuthProvider: Profile fetched:", data);
+        setProfile(data as Profile);
+      }
+    } catch (error) {
+      console.error("Error in fetchProfile:", error);
+      setProfile(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const signOut = async () => {
     await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
 };
+
+export const useAuth = () => useContext(AuthContext);

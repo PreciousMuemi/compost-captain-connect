@@ -1,87 +1,106 @@
+  import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+  import { Toaster } from '@/components/ui/toaster';
+  import { AuthProvider } from '@/hooks/useAuth';
+  import Auth from '@/pages/Auth';
+  import FarmerDashboard from '@/pages/FarmerDashboard';
+  import AdminDashboard  from '@/pages/AdminDashboard';
+  import DispatchDashboard from '@/pages/DispatchDashboard';
+  import { ProtectedRoute } from '@/components/ProtectedRoute';
+  import ErrorBoundary from '@/components/ErrorBoundary';
+  import { useAuth } from '@/hooks/useAuth';
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Layout } from "./components/Layout";
-import { AuthProvider, useAuth } from "./hooks/useAuth";
-import FarmerDashboard from "./pages/FarmerDashboard";
-import AdminDashboard from "./pages/AdminDashboard";
-import WasteReports from "./pages/WasteReports";
-import Farmers from "./pages/Farmers";
-import Payments from "./pages/Payments";
-import Analytics from "./pages/Analytics";
-import Auth from "./pages/Auth";
-import NotFound from "./pages/NotFound";
-
-const queryClient = new QueryClient();
-
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-  
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-  }
-  
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-  
-  return <>{children}</>;
-};
-
-const AppRoutes = () => {
-  const { user, loading, profile } = useAuth();
-  
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-  }
-
-  if (!user) {
+  function App() {
     return (
-      <Routes>
-        <Route path="/auth" element={<Auth />} />
-        <Route path="*" element={<Navigate to="/auth" replace />} />
-      </Routes>
+      <ErrorBoundary>
+        <Router>
+          <AuthProvider>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route 
+                path="/" 
+                element={
+                  <ProtectedRoute>
+                    <DashboardRouter />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+            <Toaster />
+          </AuthProvider>
+        </Router>
+      </ErrorBoundary>
     );
   }
 
-  // Role-based dashboard routing
-  const DashboardComponent = () => {
-    if (profile?.role === 'farmer') {
-      return <FarmerDashboard />;
+  function DashboardRouter() {
+    return (
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<DashboardSelector />} />
+          <Route 
+            path="/farmer" 
+            element={
+              <ProtectedRoute allowedRoles={["farmer"]}>
+                <FarmerDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin" 
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/dispatch" 
+            element={
+              <ProtectedRoute allowedRoles={["dispatch"]}>
+                <DispatchDashboard />
+              </ProtectedRoute>
+            } 
+          />
+        </Routes>
+      </ErrorBoundary>
+    );
+  }
+
+  function DashboardSelector() {
+    const { profile, loading } = useAuth();
+    
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+        </div>
+      );
     }
-    return <AdminDashboard />;
-  };
+    
+    // Redirect to role-specific routes
+    switch (profile?.role) {
+      case 'farmer':
+        return <Navigate to="/farmer" replace />;
+      case 'admin':
+        return <Navigate to="/admin" replace />;
+      case 'dispatch':
+        return <Navigate to="/dispatch" replace />;
+      default:
+        return (
+          <div className="flex flex-col items-center justify-center min-h-screen p-6">
+            <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md">
+              <h2 className="text-xl font-bold mb-4">Unknown Role</h2>
+              <p className="mb-4">Your account has an unknown role: {profile?.role || 'No role assigned'}</p>
+              <p className="text-sm text-gray-600 mb-4">Please contact an administrator to assign you the correct role.</p>
+              <pre className="bg-gray-100 p-4 rounded mb-4 overflow-auto text-xs">
+                {JSON.stringify(profile, null, 2)}
+              </pre>
+            </div>
+          </div>
+        );
+    }
+  }
 
-  return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<ProtectedRoute><DashboardComponent /></ProtectedRoute>} />
-        <Route path="/waste-reports" element={<ProtectedRoute><WasteReports /></ProtectedRoute>} />
-        <Route path="/farmers" element={<ProtectedRoute><Farmers /></ProtectedRoute>} />
-        <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
-        <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-        <Route path="/auth" element={<Navigate to="/" replace />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </Layout>
-  );
-};
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
-
-export default App;
+  export default App;

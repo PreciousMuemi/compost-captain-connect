@@ -47,30 +47,6 @@ export type Database = {
         }
         Relationships: []
       }
-      inventory: {
-        Row: {
-          id: string
-          last_updated: string | null
-          pellets_ready_kg: number | null
-          processed_manure_kg: number | null
-          raw_waste_kg: number | null
-        }
-        Insert: {
-          id?: string
-          last_updated?: string | null
-          pellets_ready_kg?: number | null
-          processed_manure_kg?: number | null
-          raw_waste_kg?: number | null
-        }
-        Update: {
-          id?: string
-          last_updated?: string | null
-          pellets_ready_kg?: number | null
-          processed_manure_kg?: number | null
-          raw_waste_kg?: number | null
-        }
-        Relationships: []
-      }
       orders: {
         Row: {
           created_at: string | null

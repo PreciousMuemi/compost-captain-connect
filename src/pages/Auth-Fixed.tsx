@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Leaf } from 'lucide-react';
 
-const Auth = () => {
+const AuthFixed = () => {
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -23,71 +24,49 @@ const Auth = () => {
     let mounted = true;
 
     const getInitialSession = async () => {
-      console.log("Fetching initial session...");
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log("Session fetched:", session);
-      
-      if (session) {
-        // Get user role from metadata
-        const userRole = session.user.user_metadata?.role;
+      try {
+        console.log("Fetching initial session...");
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log("Session fetched:", !!session);
         
-        // Redirect based on role
-        if (userRole === 'admin') {
-          navigate('/admin-dashboard');
-        } else if (userRole === 'dispatch') {
-          navigate('/dispatch-dashboard');
-        } else if (userRole === 'farmer') {
-          navigate('/farmer-dashboard');
-        } else {
-          // Default fallback
-          navigate('/');
+        if (mounted) {
+          if (session) {
+            navigate('/');
+          } else {
+            setInitialLoading(false);
+          }
         }
-        
-        console.log(`Redirecting to: ${getRedirectPath(userRole)}`);
+      } catch (error) {
+        console.error("Session check failed:", error);
+        if (mounted) {
+          setInitialLoading(false);
+        }
       }
     };
+
+    // Set timeout fallback
+    const timeoutId = setTimeout(() => {
+      if (mounted) {
+        console.log("Session check timeout, showing auth form");
+        setInitialLoading(false);
+      }
+    }, 3000);
 
     getInitialSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state changed:", event, session);
-      if (session) {
-        // Get user role from metadata
-        const userRole = session.user.user_metadata?.role;
-        
-        // Redirect based on role
-        if (userRole === 'admin') {
-          navigate('/admin-dashboard');
-        } else if (userRole === 'dispatch') {
-          navigate('/dispatch-dashboard');
-        } else if (userRole === 'farmer') {
-          navigate('/farmer-dashboard');
-        } else {
-          // Default fallback
-          navigate('/');
-        }
+      console.log("Auth state changed:", event, !!session);
+      if (mounted && session) {
+        navigate('/');
       }
     });
 
     return () => {
       mounted = false;
+      clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
   }, [navigate]);
-
-  // Helper function to get redirect path based on role
-  const getRedirectPath = (role: string | null | undefined) => {
-    switch (role) {
-      case 'admin':
-        return '/admin-dashboard';
-      case 'dispatch':
-        return '/dispatch-dashboard';
-      case 'farmer':
-        return '/farmer-dashboard';
-      default:
-        return '/';
-    }
-  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,8 +114,6 @@ const Auth = () => {
       });
 
       if (error) throw error;
-      
-      // Redirect will be handled by the auth state change listener
     } catch (error: any) {
       toast({
         title: "Error",
@@ -147,6 +124,22 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-green-600" />
+              <h3 className="text-lg font-semibold mb-2">Checking authentication...</h3>
+              <p className="text-sm text-gray-600">Please wait a moment</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 p-4">
@@ -178,6 +171,7 @@ const Auth = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    disabled={loading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -187,6 +181,7 @@ const Auth = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    disabled={loading}
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
@@ -205,6 +200,7 @@ const Auth = () => {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     required
+                    disabled={loading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -214,6 +210,7 @@ const Auth = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    disabled={loading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -223,10 +220,11 @@ const Auth = () => {
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     required
+                    disabled={loading}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Select value={role} onValueChange={(value: any) => setRole(value)}>
+                  <Select value={role} onValueChange={(value: any) => setRole(value)} disabled={loading}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
@@ -245,6 +243,7 @@ const Auth = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={6}
+                    disabled={loading}
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
@@ -260,4 +259,4 @@ const Auth = () => {
   );
 };
 
-export default Auth;
+export default AuthFixed;

@@ -1,116 +1,126 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatCard } from "@/components/StatCard";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Package, TrendingUp, DollarSign, Truck, ShoppingCart } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { StatCard } from "@/components/StatCard";
+import { Users, TrendingUp, Package, Truck, ShoppingCart, BarChart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 interface AdminStats {
   totalFarmers: number;
-  totalWasteReports: number;
-  totalPayments: number;
+  totalWaste: number;
+  totalEarnings: number;
   pendingReports: number;
+  completedReports: number;
   totalOrders: number;
-  totalRevenue: number;
 }
 
-export default function AdminDashboard() {
+interface WasteReport {
+  id: string;
+  waste_type: string;
+  quantity_kg: number;
+  status: string;
+  created_at: string;
+  location: string;
+  farmer: {
+    full_name: string;
+  };
+}
+
+const AdminDashboard = () => {
+  const { profile } = useAuth();
   const navigate = useNavigate();
-  const [stats, setStats] = useState({
+  const { toast } = useToast();
+  const [stats, setStats] = useState<AdminStats>({
     totalFarmers: 0,
-    totalWasteReports: 0,
-    totalPayments: 0,
+    totalWaste: 0,
+    totalEarnings: 0,
     pendingReports: 0,
+    completedReports: 0,
     totalOrders: 0,
-    totalRevenue: 0,
-    rawWasteKg: 0,
-    processedManureKg: 0,
-    pelletsReadyKg: 0,
-    totalBuyers: 0,
-    farmerBuyers: 0,
   });
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [recentReports, setRecentReports] = useState<WasteReport[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchAdminData();
-  }, []);
+    if (profile?.id) {
+      fetchAdminData();
+    }
+  }, [profile]);
 
   const fetchAdminData = async () => {
     try {
-      const [
-        { data: farmers },
-        { data: reports },
-        { data: payments },
-        { data: orders }
-      ] = await Promise.all([
-        supabase.from('profiles').select('id').eq('role', 'farmer'),
-        supabase.from('waste_reports').select('*'),
-        supabase.from('payments').select('amount, status'),
-        supabase.from('orders').select('total_amount, status, created_at')
-      ]);
+      // Count farmers
+      const { count: farmersCount } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'farmer');
 
-      const pendingReports = reports?.filter(r => r.status === 'reported' || r.status === 'scheduled').length || 0;
-      const totalPayments = payments?.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.amount, 0) || 0;
-      const totalRevenue = orders?.filter(o => o.status === 'confirmed' || o.status === 'delivered').reduce((sum, o) => sum + o.total_amount, 0) || 0;
+      // Fetch all waste reports with farmer info
+      const { data: reports } = await supabase
+        .from('waste_reports')
+        .select(`
+          id,
+          waste_type,
+          quantity_kg,
+          status,
+          created_at,
+          location,
+          farmer:profiles (
+            full_name
+          )
+        `)
+        .order('created_at', { ascending: false });
 
-      // Fetch inventory (assuming only one row)
-      const { data: inventoryData } = await supabase
-        .from('inventory')
-        .select('raw_waste_kg, processed_manure_kg, pellets_ready_kg')
-        .single();
+      // Fetch all orders
+      const { data: orders } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      // Fetch all buyers (from customers table)
-      const { data: buyers } = await supabase
-        .from('customers')
-        .select('id');
+      if (reports) {
+        const totalWaste = reports.reduce((sum, r) => sum + r.quantity_kg, 0);
+        const pendingReports = reports.filter(r => r.status === 'reported' || r.status === 'scheduled').length;
+        const completedReports = reports.filter(r => r.status === 'collected').length;
+        
+        // Calculate total earnings (10 KES per kg collected)
+        const totalEarnings = reports
+          .filter(r => r.status === 'collected')
+          .reduce((sum, r) => sum + (r.quantity_kg * 10), 0);
+        
+        setStats({
+          totalFarmers: farmersCount || 0,
+          totalWaste,
+          totalEarnings,
+          pendingReports,
+          completedReports,
+          totalOrders: orders?.length || 0,
+        });
+        
+        setRecentReports(reports as unknown as WasteReport[]);
+      }
 
-      // Fetch farmer-buyers (is_farmer = true in customers table)
-      const { data: farmerBuyers } = await supabase
-        .from('customers')
-        .select('id')
-        .eq('is_farmer', true);
-
-      setStats({
-        totalFarmers: farmers?.length || 0,
-        totalWasteReports: reports?.length || 0,
-        totalPayments,
-        pendingReports,
-        totalOrders: orders?.length || 0,
-        totalRevenue,
-        rawWasteKg: inventoryData?.raw_waste_kg || 0,
-        processedManureKg: inventoryData?.processed_manure_kg || 0,
-        pelletsReadyKg: inventoryData?.pellets_ready_kg || 0,
-        totalBuyers: buyers?.length || 0,
-        farmerBuyers: farmerBuyers?.length || 0,
-      });
-
-      // Recent activity - combine reports and orders
-      const recentReports = reports?.slice(0, 3).map(r => ({
-        type: 'waste_report',
-        description: `New waste report: ${r.waste_type} (${r.quantity_kg}kg)`,
-        timestamp: r.created_at,
-        status: r.status
-      })) || [];
-
-      const recentOrders = orders?.slice(0, 2).map(o => ({
-        type: 'order',
-        description: `New product order: KES ${o.total_amount}`,
-        timestamp: o.created_at,
-        status: o.status
-      })) || [];
-
-      const combined = [...recentReports, ...recentOrders]
-        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-        .slice(0, 5);
-
-      setRecentActivity(combined);
+      setLoading(false);
     } catch (error) {
       console.error('Error fetching admin data:', error);
-    } finally {
+      toast({
+        title: "Error",
+        description: "Failed to load dashboard data",
+        variant: "destructive",
+      });
       setLoading(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'reported': return 'bg-blue-100 text-blue-800';
+      case 'scheduled': return 'bg-yellow-100 text-yellow-800';
+      case 'collected': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -123,8 +133,12 @@ export default function AdminDashboard() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Waste Management Overview</p>
+          <p className="text-muted-foreground">Welcome, {profile?.full_name}</p>
         </div>
+        <Button onClick={() => navigate('/reports')}>
+          <BarChart className="h-4 w-4 mr-2" />
+          View Reports
+        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -136,151 +150,95 @@ export default function AdminDashboard() {
           description="Registered farmers"
         />
         <StatCard
-          title="Waste Reports"
-          value={stats.totalWasteReports}
+          title="Total Waste"
+          value={`${stats.totalWaste} kg`}
           icon={Package}
-          description="All time reports"
+          description="Waste reported"
         />
         <StatCard
           title="Pending Reports"
           value={stats.pendingReports}
           icon={Truck}
-          description="Awaiting pickup"
+          description="Awaiting collection"
         />
         <StatCard
-          title="Product Orders"
+          title="Completed Reports"
+          value={stats.completedReports}
+          icon={Package}
+          description="Waste collected"
+        />
+        <StatCard
+          title="Total Orders"
           value={stats.totalOrders}
           icon={ShoppingCart}
-          description="Customer orders"
+          description="Product orders"
         />
         <StatCard
-          title="Payments Made"
-          value={`KES ${stats.totalPayments.toLocaleString()}`}
-          icon={DollarSign}
-          description="To farmers"
-        />
-        <StatCard
-          title="Revenue"
-          value={`KES ${stats.totalRevenue.toLocaleString()}`}
+          title="Total Revenue"
+          value={`KES ${stats.totalEarnings.toLocaleString()}`}
           icon={TrendingUp}
-          description="From product sales"
-        />
-        <StatCard
-          title="Raw Waste Inventory"
-          value={`${stats.rawWasteKg.toLocaleString()} kg`}
-          icon={Package}
-          trend={{ value: 0, isPositive: true }}
-        />
-        <StatCard
-          title="Processed Manure"
-          value={`${stats.processedManureKg.toLocaleString()} kg`}
-          icon={Package}
-          trend={{ value: 0, isPositive: true }}
-        />
-        <StatCard
-          title="Pellets Ready"
-          value={`${stats.pelletsReadyKg.toLocaleString()} kg`}
-          icon={Package}
-          trend={{ value: 0, isPositive: true }}
-        />
-        <StatCard
-          title="Total Buyers"
-          value={stats.totalBuyers}
-          icon={Users}
-          description="All customers (buyers)"
-        />
-        <StatCard
-          title="Farmer-Buyers"
-          value={stats.farmerBuyers}
-          icon={Users}
-          description="Farmers who are also buyers"
+          description="From waste processing"
         />
       </div>
 
-      {/* Recent Activity */}
+      {/* Recent Reports */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>Latest reports and orders</CardDescription>
+          <CardTitle>Recent Waste Reports</CardTitle>
+          <CardDescription>Latest waste collection reports from farmers</CardDescription>
         </CardHeader>
         <CardContent>
-          {recentActivity.length > 0 ? (
+          {recentReports.length > 0 ? (
             <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+              {recentReports.map((report) => (
+                <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex-1">
-                    <p className="font-medium">{activity.description}</p>
+                    <h3 className="font-medium">{report.waste_type.replace('_', ' ')}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {report.quantity_kg}kg • {report.location}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(activity.timestamp).toLocaleString()}
+                      Reported by: {report.farmer?.full_name || 'Unknown'} • {new Date(report.created_at).toLocaleDateString()}
                     </p>
                   </div>
-                  <Badge className={`
-                    ${activity.status === 'completed' ? 'bg-green-100 text-green-800' : ''}
-                    ${activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : ''}
-                    ${activity.status === 'reported' ? 'bg-blue-100 text-blue-800' : ''}
-                  `}>
-                    {activity.status}
+                  <Badge className={getStatusColor(report.status)}>
+                    {report.status}
                   </Badge>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-muted-foreground text-center py-4">No recent activity</p>
+            <p className="text-muted-foreground text-center py-4">
+              No waste reports yet.
+            </p>
           )}
         </CardContent>
       </Card>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Button variant="outline" onClick={() => navigate('/farmers')}>
-          <Users className="h-4 w-4 mr-2" />
-          Manage Farmers
-        </Button>
-        <Button variant="outline" onClick={() => navigate('/waste-reports')}>
-          <Package className="h-4 w-4 mr-2" />
-          Waste Reports
-        </Button>
-        <Button variant="outline" onClick={() => navigate('/payments')}>
-          <DollarSign className="h-4 w-4 mr-2" />
-          Payments
-        </Button>
-        <Button variant="outline" onClick={() => navigate('/analytics')}>
-          <TrendingUp className="h-4 w-4 mr-2" />
-          Analytics
-        </Button>
-      </div>
-
-      {/* Summary Table for Admins */}
       <Card>
         <CardHeader>
-          <CardTitle>User Pools Overview</CardTitle>
-          <CardDescription>Breakdown of farmers, buyers, and overlaps</CardDescription>
+          <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <ul>
-            <li>Total Farmers: {stats.totalFarmers}</li>
-            <li>Total Buyers: {stats.totalBuyers}</li>
-            <li>Farmer-Buyers: {stats.farmerBuyers}</li>
-          </ul>
-        </CardContent>
-      </Card>
-
-      {/* Policy Recap for Admins (for documentation or UI) */}
-      <Card>
-        <CardHeader>
-          <CardTitle>User Role Policy Recap</CardTitle>
-          <CardDescription>Breakdown of farmers, buyers, and overlaps</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p>
-            **User Role Policy Recap:**  
-            - All farmers are in the `profiles` table.  
-            - All buyers are in the `customers` table.  
-            - If a farmer is also a buyer, their `customers.is_farmer` is `true`.  
-            - Farmer-buyers get discounts and are included in both pools.
-          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Button variant="outline" onClick={() => navigate('/reports')}>
+              <Package className="h-4 w-4 mr-2" />
+              Manage Reports
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/farmers')}>
+              <Users className="h-4 w-4 mr-2" />
+              Manage Farmers
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/products')}>
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              Manage Products
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
   );
-}
+};
+
+export default AdminDashboard;
