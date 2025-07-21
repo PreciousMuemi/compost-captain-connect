@@ -42,31 +42,30 @@ function DashboardRouter() {
   return (
     <ErrorBoundary>
       <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<DashboardSelector />} />
-        <Route
-          path="/farmer"
+        <Route path="/" element={<DashboardSelector />} />
+        <Route 
+          path="/farmer" 
           element={
             <ProtectedRoute allowedRoles={["farmer"]}>
               <FarmerDashboard />
             </ProtectedRoute>
-          }
+          } 
         />
-        <Route
-          path="/admin"
+        <Route 
+          path="/admin" 
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
               <AdminDashboard />
             </ProtectedRoute>
-          }
+          } 
         />
-        <Route
-          path="/dispatch"
+        <Route 
+          path="/dispatch" 
           element={
             <ProtectedRoute allowedRoles={["dispatch"]}>
               <DispatchDashboard />
             </ProtectedRoute>
-          }
+          } 
         />
       </Routes>
     </ErrorBoundary>
