@@ -29,7 +29,6 @@ import {
   Settings
 } from "lucide-react";
 import { io } from "socket.io-client";
-import DashboardLayout from "@/components/DashboardLayout";
 import type { Database } from "@/types/supabase";
 type RiderRow = Database["public"]["Tables"]["riders"]["Row"];
 
@@ -292,408 +291,246 @@ export default function DispatchDashboard() {
   }
 
   return (
-    <DashboardLayout>
-          {/* Header */}
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Dispatch Control Center</h1>
-              <p className="text-muted-foreground">Welcome, {profile?.full_name}</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="outline" onClick={fetchDispatchData}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
-              <Button
-                variant="outline"
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  window.location.href = "/login"; // or use navigate("/login") if using react-router
-                }}
-              >
-                Logout
-              </Button>
-              <div className="relative">
-                <Button variant="outline" className="relative">
-                  <Bell className="h-4 w-4" />
-                  {unreadNotifications > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                      {unreadNotifications}
-                    </span>
-                  )}
-                </Button>
-              </div>
-            </div>
+    <div className="p-4 md:p-6 max-w-full overflow-x-hidden">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Dispatch Control Center</h1>
+          <p className="text-muted-foreground">Welcome, {profile?.full_name}</p>
+        </div>
+        <div className="flex items-center space-x-4">
+          <Button variant="outline" onClick={fetchDispatchData}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+          <Button
+            variant="outline"
+            onClick={async () => {
+              await supabase.auth.signOut();
+              window.location.href = "/login";
+            }}
+          >
+            Logout
+          </Button>
+          <div className="relative">
+            <Button variant="outline" className="relative">
+              <Bell className="h-4 w-4" />
+              {unreadNotifications > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {unreadNotifications}
+                </span>
+              )}
+            </Button>
           </div>
+        </div>
+      </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard
-              title="Pending Orders"
-              value={pendingOrders}
-              icon={Clock}
-              description="Awaiting assignment"
-            />
-            <StatCard
-              title="Confirmed Orders"
-              value={confirmedOrders}
-              icon={Truck}
-              description="Ready for delivery"
-            />
-            <StatCard
-              title="Delivered Today"
-              value={deliveredToday}
-              icon={CheckCircle}
-              description="Completed deliveries"
-            />
-            <StatCard
-              title="Revenue (KES)"
-              value={totalRevenue.toLocaleString()}
-              icon={DollarSign}
-              description="From delivered orders"
-            />
-          </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <StatCard
+          title="Pending Orders"
+          value={pendingOrders}
+          icon={Clock}
+          description="Awaiting assignment"
+        />
+        <StatCard
+          title="Confirmed Orders"
+          value={confirmedOrders}
+          icon={Truck}
+          description="Ready for delivery"
+        />
+        <StatCard
+          title="Delivered Today"
+          value={deliveredToday}
+          icon={CheckCircle}
+          description="Completed deliveries"
+        />
+        <StatCard
+          title="Revenue (KES)"
+          value={totalRevenue.toLocaleString()}
+          icon={DollarSign}
+          description="From delivered orders"
+        />
+      </div>
 
-          {/* Alert Banners */}
-          {lowStockItems > 0 && (
-            <Card className="border-orange-200 bg-orange-50">
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-2">
-                  <AlertTriangle className="h-5 w-5 text-orange-600" />
-                  <span className="text-orange-800 font-medium">
-                    {lowStockItems} item(s) are low in stock and need restocking
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+      {/* Alert Banners */}
+      {lowStockItems > 0 && (
+        <Card className="border-orange-200 bg-orange-50 mb-4">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <AlertTriangle className="h-5 w-5 text-orange-600" />
+              <span className="text-orange-800 font-medium">
+                {lowStockItems} item(s) are low in stock and need restocking
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-          {/* Main Dashboard Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            {/* Live Orders Panel */}
-            <div className="lg:col-span-2 space-y-6">
-              <Card>
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        <Package className="h-5 w-5" />
-                        Live Orders Panel
-                      </CardTitle>
-                      <CardDescription>Manage order assignments and delivery status</CardDescription>
-                    </div>
-                    <Select value={orderFilter} onValueChange={setOrderFilter}>
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Filter orders" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Orders</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="confirmed">Confirmed</SelectItem>
-                        <SelectItem value="delivered">Delivered</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4 max-h-96 overflow-y-auto">
-                    {filteredOrders.map((order) => (
-                      <div key={order.id} className="border rounded-lg p-4 space-y-3">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h3 className="font-medium">Order #{order.id.slice(-6)}</h3>
-                              <Badge className={getStatusColor(order.status)}>
-                                {order.status.replace('_', ' ')}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-gray-600">
-                              Organic Products • {order.quantity_kg} kg • KES {order.total_amount.toLocaleString()}
-                            </p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <MapPin className="h-3 w-3 text-gray-400" />
-                              <span className="text-xs text-gray-500">{order.delivery_address}</span>
-                            </div>
-                            {order.customer && (
-                              <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                                <span className="flex items-center gap-1">
-                                  <User className="h-3 w-3" />
-                                  {order.customer.name}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Phone className="h-3 w-3" />
-                                  {order.customer.phone_number}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex flex-col gap-2 ml-4">
-                            {order.status === 'pending' && (
-                              <div className="flex gap-2">
-                                <Select 
-                                  value={selectedRider} 
-                                  onValueChange={setSelectedRider}
-                                >
-                                  <SelectTrigger className="w-[120px] text-xs">
-                                    <SelectValue placeholder="Assign rider" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {riders
-                                      .filter(r => r.status === 'available')
-                                      .map(rider => (
-                                        <SelectItem key={rider.id} value={rider.id}>
-                                          {rider.name}
-                                        </SelectItem>
-                                      ))
-                                    }
-                                  </SelectContent>
-                                </Select>
-                                <Button 
-                                  size="sm" 
-                                  onClick={() => selectedRider && assignRiderToOrder(order.id, selectedRider)}
-                                  disabled={!selectedRider}
-                                >
-                                  Assign
-                                </Button>
-                              </div>
-                            )}
-                            
-                            {order.status === 'confirmed' && (
-                              <div className="flex gap-2">
-                                <Button 
-                                  size="sm" 
-                                  variant="outline"
-                                  onClick={() => updateOrderStatus(order.id, 'delivered')}
-                                >
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                  Delivered
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline"
-                                  onClick={() => updateOrderStatus(order.id, 'cancelled')}
-                                >
-                                  <XCircle className="h-3 w-3 mr-1" />
-                                  Cancel
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    
-                    {filteredOrders.length === 0 && (
-                      <p className="text-center text-gray-500 py-8">No orders found</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Warehouse/Inventory Panel */}
-              <Card>
-                <CardHeader>
+      {/* Main Content Layout: Center content only */}
+      <div className="flex flex-col gap-4">
+        {/* Main Dashboard Content */}
+        <div className="flex-1 space-y-4">
+          {/* Live Orders Panel */}
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <div>
                   <CardTitle className="flex items-center gap-2">
                     <Package className="h-5 w-5" />
-                    Warehouse Inventory
+                    Live Orders Panel
                   </CardTitle>
-                  <CardDescription>Real-time stock levels and alerts</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {inventory.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <h3 className="font-medium">{item.name}</h3>
-                          <p className="text-sm text-gray-600">
-                            Stock: {item.stock_quantity} {item.unit} • 
-                            Last restocked: {new Date(item.last_restocked).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium">KES {item.price_per_unit}/{item.unit}</p>
-                          {item.stock_quantity <= item.low_stock_threshold ? (
-                            <Badge variant="destructive" className="text-xs">
-                              Low Stock
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary" className="text-xs">
-                              In Stock
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Map View */}
-              <DispatchMap orders={orders} riders={riders} />
-            </div>
-
-            {/* Right Sidebar */}
-            <div className="space-y-6">
-              
-              {/* Notifications Panel */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Bell className="h-5 w-5" />
-                    Notifications
-                    {unreadNotifications > 0 && (
-                      <Badge variant="destructive" className="ml-2">
-                        {unreadNotifications}
-                      </Badge>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {notifications.map((notification) => (
-                      <div 
-                        key={notification.id}
-                        className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                          notification.read ? 'bg-gray-50' : 'bg-blue-50 border-blue-200'
-                        }`}
-                        onClick={() => markNotificationAsRead(notification.id)}
-                      >
-                        <div className="flex items-start gap-2">
-                          {notification.type === 'low_stock' && <AlertTriangle className="h-4 w-4 text-orange-500 mt-0.5" />}
-                          {notification.type === 'failed_delivery' && <XCircle className="h-4 w-4 text-red-500 mt-0.5" />}
-                          <div className="flex-1">
-                            <h4 className="text-sm font-medium">{notification.title}</h4>
-                            <p className="text-xs text-gray-600 mt-1">{notification.message}</p>
-                            <p className="text-xs text-gray-400 mt-1">
-                              {new Date(notification.created_at).toLocaleTimeString()}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Dispatch Rider Management */}
-              <Card>
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="flex items-center gap-2">
-                      <Truck className="h-5 w-5" />
-                      Dispatch Riders
-                    </CardTitle>
-                    <Select value={riderFilter} onValueChange={setRiderFilter}>
-                      <SelectTrigger className="w-[100px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
-                        <SelectItem value="available">Available</SelectItem>
-                        <SelectItem value="busy">Busy</SelectItem>
-                        <SelectItem value="offline">Offline</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {filteredRiders.map((rider) => (
-                      <div key={rider.id} className="p-3 border rounded-lg">
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-medium text-sm">{rider.name}</h3>
-                          <Badge className={getRiderStatusColor(rider.status)}>
-                            {rider.status}
+                  <CardDescription>Manage order assignments and delivery status</CardDescription>
+                </div>
+                <Select value={orderFilter} onValueChange={setOrderFilter}>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Filter orders" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Orders</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="delivered">Delivered</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {filteredOrders.map((order) => (
+                  <div key={order.id} className="border rounded-lg p-4 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-medium">Order #{order.id.slice(-6)}</h3>
+                          <Badge className={getStatusColor(order.status)}>
+                            {order.status.replace('_', ' ')}
                           </Badge>
                         </div>
-                        <div className="space-y-1 text-xs text-gray-600">
-                          <p>{rider.vehicle_type} • {rider.phone_number}</p>
-                          <p>Current orders: {rider.current_orders}</p>
-                          <p>Success rate: {rider.success_rate}% ({rider.total_deliveries} deliveries)</p>
-                          {rider.last_location && (
-                            <p className="flex items-center gap-1">
-                              <Navigation className="h-3 w-3" />
-                              {rider.last_location}
-                            </p>
-                          )}
+                        <p className="text-sm text-gray-600">
+                          Organic Products • {order.quantity_kg} kg • KES {order.total_amount.toLocaleString()}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <MapPin className="h-3 w-3 text-gray-400" />
+                          <span className="text-xs text-gray-500">{order.delivery_address}</span>
                         </div>
+                        {order.customer && (
+                          <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                            <span className="flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              {order.customer.name}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Phone className="h-3 w-3" />
+                              {order.customer.phone_number}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                    ))}
+                      <div className="flex flex-col gap-2 ml-4">
+                        {order.status === 'pending' && (
+                          <div className="flex gap-2">
+                            <Select 
+                              value={selectedRider} 
+                              onValueChange={setSelectedRider}
+                            >
+                              <SelectTrigger className="w-[120px] text-xs">
+                                <SelectValue placeholder="Assign rider" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {riders
+                                  .filter(r => r.status === 'available')
+                                  .map(rider => (
+                                    <SelectItem key={rider.id} value={rider.id}>
+                                      {rider.name}
+                                    </SelectItem>
+                                  ))
+                                }
+                              </SelectContent>
+                            </Select>
+                            <Button 
+                              size="sm" 
+                              onClick={() => selectedRider && assignRiderToOrder(order.id, selectedRider)}
+                              disabled={!selectedRider}
+                            >
+                              Assign
+                            </Button>
+                          </div>
+                        )}
+                        {order.status === 'confirmed' && (
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => updateOrderStatus(order.id, 'delivered')}
+                            >
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Delivered
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => updateOrderStatus(order.id, 'cancelled')}
+                            >
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Cancel
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
+                ))}
+                {filteredOrders.length === 0 && (
+                  <p className="text-center text-gray-500 py-8">No orders found</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-              {/* Quick Revenue Stats */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    Revenue Tracker
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Today</span>
-                      <span className="font-medium">KES {
-                        orders
-                          .filter(o => o.status === 'delivered' && 
-                            new Date(o.created_at).toDateString() === new Date().toDateString())
-                          .reduce((sum, o) => sum + o.total_amount, 0)
-                          .toLocaleString()
-                      }</span>
+          {/* Warehouse/Inventory Panel */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Warehouse Inventory
+              </CardTitle>
+              <CardDescription>Real-time stock levels and alerts</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {inventory.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex-1">
+                      <h3 className="font-medium">{item.name}</h3>
+                      <p className="text-sm text-gray-600">
+                        Stock: {item.stock_quantity} {item.unit} • 
+                        Last restocked: {new Date(item.last_restocked).toLocaleDateString()}
+                      </p>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">This Week</span>
-                      <span className="font-medium">KES {
-                        orders
-                          .filter(o => o.status === 'delivered')
-                          .reduce((sum, o) => sum + o.total_amount, 0)
-                          .toLocaleString()
-                      }</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Pending Value</span>
-                      <span className="font-medium text-orange-600">KES {
-                        orders
-                          .filter(o => o.status !== 'delivered' && o.status !== 'cancelled')
-                          .reduce((sum, o) => sum + o.total_amount, 0)
-                          .toLocaleString()
-                      }</span>
+                    <div className="text-right">
+                      <p className="font-medium">KES {item.price_per_unit}/{item.unit}</p>
+                      {item.stock_quantity <= item.low_stock_threshold ? (
+                        <Badge variant="destructive" className="text-xs">
+                          Low Stock
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-xs">
+                          In Stock
+                        </Badge>
+                      )}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-              {/* Return & Reuse Tracker */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Recycle className="h-5 w-5" />
-                    Sustainability Tracker
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Bags returned</span>
-                      <span className="font-medium">47</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Sacks reused</span>
-                      <span className="font-medium">23</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">CO₂ saved</span>
-                      <span className="font-medium text-green-600">156 kg</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </DashboardLayout>
+          {/* Map View */}
+          <DispatchMap orders={orders} riders={riders} />
+        </div>
+      </div>
+    </div>
   );
 }

@@ -67,7 +67,7 @@ const getNavigationItems = (userRole: string) => {
   return baseItems;
 };
 
-export function AppSidebar() {
+export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { open } = useSidebar();
   const { profile } = useAuth();
   const location = useLocation();
@@ -81,18 +81,14 @@ export function AppSidebar() {
 
   return (
     <Sidebar className={collapsed ? "w-14" : "w-64"} collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border p-4">
-        <div className="flex items-center space-x-2">
-          <div className="bg-accent rounded-lg p-2">
-            <Truck className="h-6 w-6 text-accent-foreground" />
+      <SidebarHeader className="border-b border-sidebar-border p-4 flex flex-col items-center">
+        <img src="/logo.png" alt="Captain Compost Logo" className="h-16 w-16 mb-2" />
+        {!collapsed && (
+          <div className="text-center">
+            <h2 className="text-lg font-bold text-sidebar-foreground">Captain Compost</h2>
+            <p className="text-xs text-sidebar-foreground/70">EST. 2025</p>
           </div>
-          {!collapsed && (
-            <div>
-              <h2 className="text-lg font-bold text-sidebar-foreground">Dispatch Center</h2>
-              <p className="text-xs text-sidebar-foreground/70">Live Operations</p>
-            </div>
-          )}
-        </div>
+        )}
       </SidebarHeader>
       
       <SidebarContent>
@@ -107,6 +103,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.href}
+                      onClick={onNavigate}
                       className={({ isActive: navActive }) =>
                         `flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                           isActive(item.href) || navActive

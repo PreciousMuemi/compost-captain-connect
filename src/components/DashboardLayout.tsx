@@ -8,7 +8,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen flex-row overflow-x-hidden">
         {/* Mobile Hamburger */}
         <button
           className="fixed top-4 left-4 z-40 md:hidden bg-white rounded-full p-2 shadow"
@@ -18,11 +18,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Menu className="h-6 w-6" />
         </button>
         {/* Sidebar */}
+        {/* Mobile sidebar: fixed, slides in/out */}
         <div
-          className={`fixed inset-y-0 left-0 z-50 transition-transform duration-200 md:static md:translate-x-0 md:block ${
-            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          } md:w-64 w-64 bg-white shadow-lg md:shadow-none`}
+          className={
+            (sidebarOpen
+              ? "fixed inset-y-0 left-0 z-50 translate-x-0 md:hidden "
+              : "fixed inset-y-0 left-0 z-50 -translate-x-full md:hidden ") +
+            "transition-transform duration-200 bg-white shadow-lg w-64"
+          }
+          style={{ maxWidth: '100vw' }}
         >
+          <AppSidebar onNavigate={() => setSidebarOpen(false)} />
+        </div>
+        {/* Desktop sidebar: always visible, static in flex row */}
+        <div className="hidden md:block bg-white shadow-lg w-64 lg:sticky lg:top-0 lg:h-screen">
           <AppSidebar />
         </div>
         {/* Overlay for mobile */}
@@ -35,7 +44,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           />
         )}
         {/* Main content */}
-        <main className="flex-1 p-6 space-y-6 md:ml-0 ml-0 md:pl-0 pl-0">
+        <main className="flex-1 h-screen overflow-y-scroll bg-white">
           {children}
         </main>
       </div>

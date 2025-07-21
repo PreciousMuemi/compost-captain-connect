@@ -7,8 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Users, Package, TrendingUp, DollarSign, Truck, ShoppingCart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
-import { AppSidebar } from "@/components/AppSidebar";
-import { SidebarProvider } from "@/components/ui/sidebar";
 
 interface AdminStats {
   totalFarmers: number;

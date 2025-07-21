@@ -110,7 +110,12 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+      <img src="/logo.png" alt="Captain Compost Logo" className="h-20 w-20 mb-4" />
+      <div className="text-center mb-8">
+        <h1 className="text-2xl font-bold text-gray-800">Captain Compost</h1>
+        <p className="text-xs text-gray-500">EST. 2025</p>
+      </div>
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
