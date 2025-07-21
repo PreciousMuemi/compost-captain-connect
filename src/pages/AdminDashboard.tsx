@@ -1,126 +1,92 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/StatCard";
-import { Users, TrendingUp, Package, Truck, ShoppingCart, BarChart } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Users, Package, TrendingUp, DollarSign, Truck, ShoppingCart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import DashboardLayout from "@/components/DashboardLayout";
+import { AppSidebar } from "@/components/AppSidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 interface AdminStats {
   totalFarmers: number;
-  totalWaste: number;
-  totalEarnings: number;
+  totalWasteReports: number;
+  totalPayments: number;
   pendingReports: number;
-  completedReports: number;
   totalOrders: number;
+  totalRevenue: number;
 }
 
-interface WasteReport {
-  id: string;
-  waste_type: string;
-  quantity_kg: number;
-  status: string;
-  created_at: string;
-  location: string;
-  farmer: {
-    full_name: string;
-  };
-}
-
-const AdminDashboard = () => {
-  const { profile } = useAuth();
+export default function AdminDashboard() {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [stats, setStats] = useState<AdminStats>({
     totalFarmers: 0,
-    totalWaste: 0,
-    totalEarnings: 0,
+    totalWasteReports: 0,
+    totalPayments: 0,
     pendingReports: 0,
-    completedReports: 0,
     totalOrders: 0,
+    totalRevenue: 0,
   });
-  const [recentReports, setRecentReports] = useState<WasteReport[]>([]);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (profile?.id) {
-      fetchAdminData();
-    }
-  }, [profile]);
+    fetchAdminData();
+  }, []);
 
   const fetchAdminData = async () => {
     try {
-      // Count farmers
-      const { count: farmersCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('role', 'farmer');
+      const [
+        { data: farmers },
+        { data: reports },
+        { data: payments },
+        { data: orders }
+      ] = await Promise.all([
+        supabase.from('profiles').select('id').eq('role', 'farmer'),
+        supabase.from('waste_reports').select('*'),
+        supabase.from('payments').select('amount, status'),
+        supabase.from('orders').select('total_amount, status, created_at')
+      ]);
 
-      // Fetch all waste reports with farmer info
-      const { data: reports } = await supabase
-        .from('waste_reports')
-        .select(`
-          id,
-          waste_type,
-          quantity_kg,
-          status,
-          created_at,
-          location,
-          farmer:profiles (
-            full_name
-          )
-        `)
-        .order('created_at', { ascending: false });
+      const pendingReports = reports?.filter(r => r.status === 'reported' || r.status === 'scheduled').length || 0;
+      const totalPayments = payments?.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.amount, 0) || 0;
+      const totalRevenue = orders?.filter(o => o.status === 'confirmed' || o.status === 'delivered').reduce((sum, o) => sum + o.total_amount, 0) || 0;
 
-      // Fetch all orders
-      const { data: orders } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
+      setStats({
+        totalFarmers: farmers?.length || 0,
+        totalWasteReports: reports?.length || 0,
+        totalPayments,
+        pendingReports,
+        totalOrders: orders?.length || 0,
+        totalRevenue,
+      });
 
-      if (reports) {
-        const totalWaste = reports.reduce((sum, r) => sum + r.quantity_kg, 0);
-        const pendingReports = reports.filter(r => r.status === 'reported' || r.status === 'scheduled').length;
-        const completedReports = reports.filter(r => r.status === 'collected').length;
-        
-        // Calculate total earnings (10 KES per kg collected)
-        const totalEarnings = reports
-          .filter(r => r.status === 'collected')
-          .reduce((sum, r) => sum + (r.quantity_kg * 10), 0);
-        
-        setStats({
-          totalFarmers: farmersCount || 0,
-          totalWaste,
-          totalEarnings,
-          pendingReports,
-          completedReports,
-          totalOrders: orders?.length || 0,
-        });
-        
-        setRecentReports(reports as unknown as WasteReport[]);
-      }
+      // Recent activity - combine reports and orders
+      const recentReports = reports?.slice(0, 3).map(r => ({
+        type: 'waste_report',
+        description: `New waste report: ${r.waste_type} (${r.quantity_kg}kg)`,
+        timestamp: r.created_at,
+        status: r.status
+      })) || [];
 
-      setLoading(false);
+      const recentOrders = orders?.slice(0, 2).map(o => ({
+        type: 'order',
+        description: `New product order: KES ${o.total_amount}`,
+        timestamp: o.created_at,
+        status: o.status
+      })) || [];
+
+      const combined = [...recentReports, ...recentOrders]
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, 5);
+
+      setRecentActivity(combined);
     } catch (error) {
       console.error('Error fetching admin data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load dashboard data",
-        variant: "destructive",
-      });
+    } finally {
       setLoading(false);
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'reported': return 'bg-blue-100 text-blue-800';
-      case 'scheduled': return 'bg-yellow-100 text-yellow-800';
-      case 'collected': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -129,116 +95,117 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Welcome, {profile?.full_name}</p>
-        </div>
-        <Button onClick={() => navigate('/reports')}>
-          <BarChart className="h-4 w-4 mr-2" />
-          View Reports
-        </Button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <StatCard
-          title="Total Farmers"
-          value={stats.totalFarmers}
-          icon={Users}
-          description="Registered farmers"
-        />
-        <StatCard
-          title="Total Waste"
-          value={`${stats.totalWaste} kg`}
-          icon={Package}
-          description="Waste reported"
-        />
-        <StatCard
-          title="Pending Reports"
-          value={stats.pendingReports}
-          icon={Truck}
-          description="Awaiting collection"
-        />
-        <StatCard
-          title="Completed Reports"
-          value={stats.completedReports}
-          icon={Package}
-          description="Waste collected"
-        />
-        <StatCard
-          title="Total Orders"
-          value={stats.totalOrders}
-          icon={ShoppingCart}
-          description="Product orders"
-        />
-        <StatCard
-          title="Total Revenue"
-          value={`KES ${stats.totalEarnings.toLocaleString()}`}
-          icon={TrendingUp}
-          description="From waste processing"
-        />
-      </div>
-
-      {/* Recent Reports */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Waste Reports</CardTitle>
-          <CardDescription>Latest waste collection reports from farmers</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {recentReports.length > 0 ? (
-            <div className="space-y-4">
-              {recentReports.map((report) => (
-                <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex-1">
-                    <h3 className="font-medium">{report.waste_type.replace('_', ' ')}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {report.quantity_kg}kg • {report.location}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Reported by: {report.farmer?.full_name || 'Unknown'} • {new Date(report.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <Badge className={getStatusColor(report.status)}>
-                    {report.status}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-muted-foreground text-center py-4">
-              No waste reports yet.
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" onClick={() => navigate('/reports')}>
-              <Package className="h-4 w-4 mr-2" />
-              Manage Reports
-            </Button>
-            <Button variant="outline" onClick={() => navigate('/farmers')}>
-              <Users className="h-4 w-4 mr-2" />
-              Manage Farmers
-            </Button>
-            <Button variant="outline" onClick={() => navigate('/products')}>
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              Manage Products
-            </Button>
+    <DashboardLayout>
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+            <p className="text-muted-foreground">Waste Management Overview</p>
           </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
+          <button
+            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
+            onClick={async () => {
+              await supabase.auth.signOut();
+              navigate('/login');
+            }}
+          >
+            Logout
+          </button>
+        </div>
 
-export default AdminDashboard;
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <StatCard
+            title="Total Farmers"
+            value={stats.totalFarmers}
+            icon={Users}
+            description="Registered farmers"
+          />
+          <StatCard
+            title="Waste Reports"
+            value={stats.totalWasteReports}
+            icon={Package}
+            description="All time reports"
+          />
+          <StatCard
+            title="Pending Reports"
+            value={stats.pendingReports}
+            icon={Truck}
+            description="Awaiting pickup"
+          />
+          <StatCard
+            title="Product Orders"
+            value={stats.totalOrders}
+            icon={ShoppingCart}
+            description="Customer orders"
+          />
+          <StatCard
+            title="Payments Made"
+            value={`KES ${stats.totalPayments.toLocaleString()}`}
+            icon={DollarSign}
+            description="To farmers"
+          />
+          <StatCard
+            title="Revenue"
+            value={`KES ${stats.totalRevenue.toLocaleString()}`}
+            icon={TrendingUp}
+            description="From product sales"
+          />
+        </div>
+
+        {/* Recent Activity */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+            <CardDescription>Latest reports and orders</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {recentActivity.length > 0 ? (
+              <div className="space-y-4">
+                {recentActivity.map((activity, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex-1">
+                      <p className="font-medium">{activity.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(activity.timestamp).toLocaleString()}
+                      </p>
+                    </div>
+                    <Badge className={`
+                      ${activity.status === 'completed' ? 'bg-green-100 text-green-800' : ''}
+                      ${activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : ''}
+                      ${activity.status === 'reported' ? 'bg-blue-100 text-blue-800' : ''}
+                    `}>
+                      {activity.status}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-center py-4">No recent activity</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Button variant="outline" onClick={() => navigate('/farmers')}>
+            <Users className="h-4 w-4 mr-2" />
+            Manage Farmers
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/waste-reports')}>
+            <Package className="h-4 w-4 mr-2" />
+            Waste Reports
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/payments')}>
+            <DollarSign className="h-4 w-4 mr-2" />
+            Payments
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/analytics')}>
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Analytics
+          </Button>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+}

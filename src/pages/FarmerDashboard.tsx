@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/StatCard";
 import { FarmerPaymentModal } from "@/components/FarmerPaymentModal";
+import { FarmerSidebar } from "@/components/FarmerSidebar";
 import { Plus, TrendingUp, Package, Clock, ShoppingCart, Leaf } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -150,17 +151,18 @@ export default function FarmerDashboard() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Welcome, {profile?.full_name}</h1>
-          <p className="text-muted-foreground">Farmer Dashboard</p>
+    <FarmerSidebar>
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Welcome, {profile?.full_name}</h1>
+            <p className="text-muted-foreground">Farmer Dashboard</p>
+          </div>
+          <Button onClick={() => navigate('/waste-reports')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Report Waste
+          </Button>
         </div>
-        <Button onClick={() => navigate('/waste-reports')}>
-          <Plus className="h-4 w-4 mr-2" />
-          Report Waste
-        </Button>
-      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -291,6 +293,7 @@ export default function FarmerDashboard() {
           </div>
         </CardContent>
       </Card>
+      </div>
 
       {/* Product Purchase Modal */}
       <FarmerPaymentModal
@@ -308,6 +311,6 @@ export default function FarmerDashboard() {
           fetchFarmerData(); // Refresh data
         }}
       />
-    </div>
+    </FarmerSidebar>
   );
 }

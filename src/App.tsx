@@ -13,6 +13,18 @@ import DispatchDashboard from "@/pages/DispatchDashboard";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { useAuth } from "@/hooks/useAuth";
+import Riders from "@/pages/riders";
+import Inventory from "@/pages/inventory";
+import Notifications from "@/pages/notifications";
+import DispatchMapPage from "@/pages/dispatch-map";
+import Settings from "@/pages/settings";
+import DashboardLayout from "@/components/DashboardLayout";
+import Farmers from "@/pages/Farmers";
+import WasteReports from "@/pages/WasteReports";
+import Payments from "@/pages/Payments";
+import Analytics from "@/pages/Analytics";
+import FarmerProfile from "@/pages/FarmerProfile";
+import FarmerHistory from "@/pages/FarmerHistory";
 
 function App() {
   return (
@@ -25,7 +37,141 @@ function App() {
               path="/"
               element={
                 <ProtectedRoute>
-                  <DashboardRouter />
+                  <DashboardSelector />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/farmer"
+              element={
+                <ProtectedRoute allowedRoles={["farmer"]}>
+                  <FarmerDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin-dashboard"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <DashboardLayout>
+                    <AdminDashboard />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/farmers"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <DashboardLayout>
+                    <Farmers />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/farmers/:id/profile"
+              element={<FarmerProfile />}
+            />
+            <Route
+              path="/farmers/:id/history"
+              element={<FarmerHistory />}
+            />
+            <Route
+              path="/waste-reports"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <DashboardLayout>
+                    <WasteReports />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/payments"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <DashboardLayout>
+                    <Payments />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <DashboardLayout>
+                    <Analytics />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dispatch-dashboard"
+              element={
+                <ProtectedRoute allowedRoles={['dispatch']}>
+                  <DashboardLayout>
+                    <DispatchDashboard />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/riders"
+              element={
+                <ProtectedRoute allowedRoles={['dispatch']}>
+                  <DashboardLayout>
+                    <Riders />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/inventory"
+              element={
+                <ProtectedRoute allowedRoles={['dispatch']}>
+                  <DashboardLayout>
+                    <Inventory />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute allowedRoles={['dispatch']}>
+                  <DashboardLayout>
+                    <Notifications />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dispatch-map"
+              element={
+                <ProtectedRoute allowedRoles={['dispatch']}>
+                  <DashboardLayout>
+                    <DispatchMapPage />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute allowedRoles={['dispatch']}>
+                  <DashboardLayout>
+                    <Settings />
+                  </DashboardLayout>
                 </ProtectedRoute>
               }
             />
@@ -38,42 +184,8 @@ function App() {
   );
 }
 
-function DashboardRouter() {
-  return (
-    <ErrorBoundary>
-      <Routes>
-        <Route path="/" element={<DashboardSelector />} />
-        <Route 
-          path="/farmer" 
-          element={
-            <ProtectedRoute allowedRoles={["farmer"]}>
-              <FarmerDashboard />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/admin" 
-          element={
-            <ProtectedRoute allowedRoles={["admin"]}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/dispatch" 
-          element={
-            <ProtectedRoute allowedRoles={["dispatch"]}>
-              <DispatchDashboard />
-            </ProtectedRoute>
-          } 
-        />
-      </Routes>
-    </ErrorBoundary>
-  );
-}
-
 function DashboardSelector() {
-  const { profile, loading } = useAuth();
+  const { profile, loading, signOut } = useAuth();
 
   console.log("🚀 DashboardSelector - loading:", loading, "profile:", profile);
 
@@ -97,7 +209,7 @@ function DashboardSelector() {
       return <Navigate to="/admin" replace />;
     case "dispatch":
       console.log("🚀 Redirecting to dispatch dashboard");
-      return <Navigate to="/dispatch" replace />;
+      return <Navigate to="/dispatch-dashboard" replace />;
     default:
       return (
         <div className="flex flex-col items-center justify-center min-h-screen p-6">
@@ -110,6 +222,14 @@ function DashboardSelector() {
             <p className="text-sm text-gray-600 mb-4">
               Please contact an administrator to assign you the correct role.
             </p>
+            <div className="mb-4">
+              <button
+                onClick={signOut}
+                className="w-full px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+              >
+                Sign Out
+              </button>
+            </div>
             <pre className="bg-gray-100 p-4 rounded mb-4 overflow-auto text-xs">
               {JSON.stringify(profile, null, 2)}
             </pre>

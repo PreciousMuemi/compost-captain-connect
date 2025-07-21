@@ -1,13 +1,15 @@
-
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Phone, MapPin, Calendar, TrendingUp, Eye, UserPlus } from "lucide-react";
+import { Phone, MapPin, Calendar, TrendingUp, Eye, UserPlus, X } from "lucide-react";
 import { mockFarmers } from "../data/mockData";
 import { Farmer } from "../types";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-KE', {
@@ -25,11 +27,99 @@ const formatDate = (dateString: string) => {
   });
 };
 
+function AddFarmerModal({ onClose, onAdd }: { onClose: () => void, onAdd: () => void }) {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [location, setLocation] = useState("");
+  const [region, setRegion] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg("");
+    // Use Supabase Auth admin API to create user
+    // @ts-ignore: admin is available if using service role key
+    const { data, error } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      user_metadata: {
+        full_name: name,
+        phone_number: phone,
+        location,
+        role: "farmer"
+      }
+    });
+    setLoading(false);
+    if (error) {
+      setErrorMsg(error.message);
+      return;
+    }
+    onAdd();
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 relative">
+        <button className="absolute top-2 right-2 text-gray-400 hover:text-gray-600" onClick={onClose}>
+          <X className="h-5 w-5" />
+        </button>
+        <h2 className="text-xl font-bold mb-4">Add New Farmer</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input placeholder="Full Name" value={name} onChange={e => setName(e.target.value)} required />
+          <Input placeholder="Phone Number" value={phone} onChange={e => setPhone(e.target.value)} required />
+          <Input placeholder="Location" value={location} onChange={e => setLocation(e.target.value)} required />
+          <Input placeholder="Region" value={region} onChange={e => setRegion(e.target.value)} required />
+          <Input placeholder="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+          <Input placeholder="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+          {errorMsg && <div className="text-red-600 text-sm">{errorMsg}</div>}
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>Cancel</Button>
+            <Button type="submit" className="bg-primary hover:bg-primary/90" disabled={loading}>
+              {loading ? "Adding..." : "Add Farmer"}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function Farmers() {
-  const [farmers] = useState<Farmer[]>(mockFarmers);
+  const [farmers, setFarmers] = useState<Farmer[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [regionFilter, setRegionFilter] = useState<string>("all");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const navigate = useNavigate();
+
+  const fetchFarmers = async () => {
+    const { data, error } = await supabase.from('profiles').select('*').eq('role', 'farmer');
+    if (!error && data) {
+      // Map DB rows to Farmer type
+      setFarmers(
+        data.map((row: any) => ({
+          id: row.id,
+          name: row.full_name,
+          phoneNumber: row.phone_number,
+          location: row.location || '',
+          region: '', // region is not in DB, so leave blank or parse from location if you stored it
+          totalEarnings: 0, // You can fetch/aggregate payments if needed
+          totalWasteSubmitted: 0, // You can fetch/aggregate waste_reports if needed
+          joinedDate: row.created_at,
+          isActive: true // Or derive from another field if you have it
+        }))
+      );
+    }
+  };
+
+  useEffect(() => {
+    fetchFarmers();
+  }, []);
 
   const filteredFarmers = farmers.filter((farmer) => {
     const matchesSearch = farmer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -56,12 +146,12 @@ export default function Farmers() {
           <h1 className="text-3xl font-bold text-gray-900">Farmers</h1>
           <p className="text-gray-600 mt-1">Manage farmer profiles and track their contributions.</p>
         </div>
-        <Button className="bg-primary hover:bg-primary/90">
+        <Button className="bg-primary hover:bg-primary/90" onClick={() => setShowAddModal(true)}>
           <UserPlus className="h-4 w-4 mr-2" />
           Add New Farmer
         </Button>
       </div>
-
+      {showAddModal && <AddFarmerModal onClose={() => setShowAddModal(false)} onAdd={fetchFarmers} />}
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="bg-white shadow-sm border border-gray-200">
@@ -89,7 +179,6 @@ export default function Farmers() {
           </CardContent>
         </Card>
       </div>
-
       {/* Filters */}
       <Card className="bg-white shadow-sm border border-gray-200">
         <CardContent className="p-6">
@@ -120,7 +209,7 @@ export default function Farmers() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Regions</SelectItem>
-                  {regions.map(region => (
+                  {regions.filter(region => region).map(region => (
                     <SelectItem key={region} value={region}>{region}</SelectItem>
                   ))}
                 </SelectContent>
@@ -129,7 +218,6 @@ export default function Farmers() {
           </div>
         </CardContent>
       </Card>
-
       {/* Farmers Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredFarmers.map((farmer) => (
@@ -161,7 +249,6 @@ export default function Farmers() {
                   <span>Joined {formatDate(farmer.joinedDate)}</span>
                 </div>
               </div>
-
               <div className="border-t pt-3 space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Total Earnings</span>
@@ -177,13 +264,12 @@ export default function Farmers() {
                   </span>
                 </div>
               </div>
-
               <div className="flex gap-2 pt-2">
-                <Button size="sm" className="flex-1">
+                <Button size="sm" className="flex-1" onClick={() => navigate(`/farmers/${farmer.id}/profile`)}>
                   <Eye className="h-4 w-4 mr-2" />
                   View Profile
                 </Button>
-                <Button size="sm" variant="outline" className="flex-1">
+                <Button size="sm" variant="outline" className="flex-1" onClick={() => navigate(`/farmers/${farmer.id}/history`)}>
                   <TrendingUp className="h-4 w-4 mr-2" />
                   History
                 </Button>
@@ -192,7 +278,6 @@ export default function Farmers() {
           </Card>
         ))}
       </div>
-
       {filteredFarmers.length === 0 && (
         <Card className="bg-white shadow-sm border border-gray-200">
           <CardContent className="p-12 text-center">

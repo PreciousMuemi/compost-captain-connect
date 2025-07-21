@@ -19,7 +19,7 @@ export interface WasteReport {
   quantity: number; // in kg
   location: string;
   region: string;
-  status: 'pending' | 'assigned' | 'collected' | 'rejected';
+  status: 'reported' | 'scheduled' | 'collected' | 'processed';
   reportedAt: string;
   collectedAt?: string;
   assignedAgent?: string;

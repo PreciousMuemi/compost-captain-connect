@@ -126,7 +126,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
+    console.log("🔥 AuthProvider: Signing out user");
+    setUser(null);
+    setProfile(null);
+    setLoading(false);
     await supabase.auth.signOut();
+    // Clear any cached data
+    localStorage.removeItem('supabase.auth.token');
+    sessionStorage.clear();
   };
 
   return (

@@ -6,7 +6,13 @@ import {
   CreditCard, 
   TrendingUp,
   Leaf,
-  Menu
+  Menu,
+  Truck,
+  Package,
+  ShoppingCart,
+  Bell,
+  MapPin,
+  Settings
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,8 +32,20 @@ import {
 // Navigation items based on user role
 const getNavigationItems = (userRole: string) => {
   const baseItems = [
-    { name: "Dashboard", href: "/", icon: Home, roles: ['farmer', 'admin', 'dispatch'] },
+    { name: "Dashboard", href: "/dispatch-dashboard", icon: Home, roles: ['dispatch'] },
   ];
+
+  if (userRole === 'dispatch') {
+    return [
+      ...baseItems,
+      { name: "Orders", href: "/dispatch-dashboard", icon: Package, roles: ['dispatch'] },
+      { name: "Riders", href: "/riders", icon: Truck, roles: ['dispatch'] },
+      { name: "Inventory", href: "/inventory", icon: ShoppingCart, roles: ['dispatch'] },
+      { name: "Notifications", href: "/notifications", icon: Bell, roles: ['dispatch'] },
+      { name: "Map", href: "/dispatch-map", icon: MapPin, roles: ['dispatch'] },
+      { name: "Settings", href: "/settings", icon: Settings, roles: ['dispatch'] },
+    ];
+  }
 
   if (userRole === 'farmer') {
     return [
@@ -66,12 +84,12 @@ export function AppSidebar() {
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center space-x-2">
           <div className="bg-accent rounded-lg p-2">
-            <Leaf className="h-6 w-6 text-accent-foreground" />
+            <Truck className="h-6 w-6 text-accent-foreground" />
           </div>
           {!collapsed && (
             <div>
-              <h2 className="text-lg font-bold text-sidebar-foreground">Captain Compost</h2>
-              <p className="text-xs text-sidebar-foreground/70">Waste Management</p>
+              <h2 className="text-lg font-bold text-sidebar-foreground">Dispatch Center</h2>
+              <p className="text-xs text-sidebar-foreground/70">Live Operations</p>
             </div>
           )}
         </div>
