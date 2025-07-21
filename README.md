@@ -1,73 +1,141 @@
-# Welcome to your Lovable project
+# Captain Compost Connect
 
-## Project info
+A modern waste-to-manure platform built with React (Vite), Supabase (DB, Auth, Edge Functions), and a USSD handler for Africa's Talking.
 
-**URL**: https://lovable.dev/projects/8c3e79e1-6f72-4a53-9c56-20c0209d4f79
+---
 
-## How can I edit this code?
+## 🚀 Project Overview
 
-There are several ways of editing your application.
+- **Frontend:** React (Vite) app for dashboards, admin, dispatch, and farmer views.
+- **Backend:** Supabase (Postgres, Auth, Realtime, Edge Functions).
+- **USSD/Edge Functions:** Deno-based serverless functions for mobile/USSD integration.
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/8c3e79e1-6f72-4a53-9c56-20c0209d4f79) and start prompting.
+## 🛠️ Local Development
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+### 1. **Clone the Repo**
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+git clone <your-repo-url>
+cd compost-captain-connect
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### 2. **Install Dependencies**
 
-# Step 3: Install the necessary dependencies.
-npm i
+```sh
+npm install
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### 3. **Set Up Environment Variables**
+
+Create a `.env` file in the root with:
+
+```
+VITE_SUPABASE_URL=your-supabase-url
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
+
+### 4. **Run the Frontend**
+
+```sh
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### 5. **Run/Deploy Edge Functions (USSD, etc.)**
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- Install Supabase CLI if needed:
+  ```sh
+  npm install -g supabase
+  ```
+- Log in:
+  ```sh
+  supabase login
+  ```
+- Deploy a function:
+  ```sh
+  supabase functions deploy ussd-handler
+  ```
+- Get the public URL:
+  ```sh
+  supabase functions list
+  ```
 
-**Use GitHub Codespaces**
+---
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 🌍 Deployment
 
-## What technologies are used for this project?
+### **Frontend (Vercel)**
 
-This project is built with:
+1. Push your code to GitHub.
+2. Go to [vercel.com](https://vercel.com/) and import your repo.
+3. Set environment variables (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`).
+4. Deploy!
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### **Edge Functions (Supabase)**
 
-## How can I deploy this project?
+- Use the Supabase CLI as above. Each function gets a public URL.
 
-Simply open [Lovable](https://lovable.dev/projects/8c3e79e1-6f72-4a53-9c56-20c0209d4f79) and click on Share -> Publish.
+---
 
-## Can I connect a custom domain to my Lovable project?
+## 🧬 Generating Supabase Types
 
-Yes, you can!
+If you change your DB schema, regenerate types:
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```sh
+npx supabase gen types typescript --project-id <your-project-id> --schema public | Out-File -Encoding utf8 src/types/supabase.ts
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+---
+
+## 📁 Folder Structure
+
+```
+compost-captain-connect/
+  src/
+    pages/         # All page components (Dashboard, Farmers, etc.)
+    components/    # Reusable UI components
+    hooks/         # Custom React hooks
+    integrations/  # Supabase client, etc.
+    types/         # TypeScript types (including supabase.ts)
+    ...
+  supabase/
+    functions/     # Edge Functions (USSD handler, etc.)
+    migrations/    # SQL migrations
+  public/          # Static assets
+  ...
+```
+
+---
+
+## ⚙️ Environment Variables
+
+- `VITE_SUPABASE_URL` (frontend)
+- `VITE_SUPABASE_ANON_KEY` (frontend)
+- `SUPABASE_URL` (Edge Functions)
+- `SUPABASE_SERVICE_ROLE_KEY` (Edge Functions)
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repo and create a feature branch.
+2. Make your changes and commit.
+3. Open a pull request.
+4. For DB changes, update migrations and regenerate types.
+
+---
+
+## 📞 USSD/Edge Function Public URL
+
+- Deploy with `supabase functions deploy ussd-handler`.
+- Get the URL with `supabase functions list`.
+- Use this as your callback URL for Africa's Talking or other integrations.
+
+---
+
+## 📝 Notes
+
+- Edge Functions use Deno, not Node.js. Ignore local lint errors for Deno-specific code.
+- All data is live from Supabase—no static/mock data in production.
+- For help, see the Supabase and Vercel docs, or open an issue.
