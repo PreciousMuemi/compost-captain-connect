@@ -5,8 +5,8 @@ import { useNavigate } from 'react-router-dom';
 interface Profile {
   id: string;
   full_name: string;
-  email: string;
   phone_number: string;
+  location?: string;
   role: 'farmer' | 'admin' | 'dispatch';
 }
 
@@ -80,9 +80,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log("AuthProvider: Fetching profile for user:", userId);
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, phone_number, role')
-        .eq('id', userId)
-        .single();
+        .select('id, full_name, phone_number, location, role')
+        .eq('user_id', userId)
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching profile:", error);

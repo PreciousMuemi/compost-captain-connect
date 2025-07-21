@@ -107,30 +107,23 @@ export default function FarmerDashboard() {
         setRecentReports(reports.slice(0, 5));
       }
 
-      // Fetch available products from inventory
-      const { data: inventory } = await supabase
-        .from('inventory')
-        .select('processed_manure_kg, pellets_ready_kg')
-        .single();
-
-      if (inventory) {
-        setProducts([
-          {
-            id: 'processed_manure',
-            name: 'Processed Organic Manure',
-            price_per_kg: 50,
-            available_kg: inventory.processed_manure_kg || 0,
-            description: 'High-quality processed organic manure perfect for farming'
-          },
-          {
-            id: 'pellets',
-            name: 'Organic Fertilizer Pellets',
-            price_per_kg: 80,
-            available_kg: inventory.pellets_ready_kg || 0,
-            description: 'Premium organic fertilizer pellets for enhanced crop yield'
-          }
-        ]);
-      }
+      // Set default products (inventory table doesn't exist yet)
+      setProducts([
+        {
+          id: 'processed_manure',
+          name: 'Processed Organic Manure',
+          price_per_kg: 50,
+          available_kg: 100,
+          description: 'High-quality processed organic manure perfect for farming'
+        },
+        {
+          id: 'pellets',
+          name: 'Organic Fertilizer Pellets',
+          price_per_kg: 80,
+          available_kg: 50,
+          description: 'Premium organic fertilizer pellets for enhanced crop yield'
+        }
+      ]);
     } catch (error) {
       console.error('Error fetching farmer data:', error);
     } finally {
