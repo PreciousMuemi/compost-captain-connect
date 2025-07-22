@@ -12,7 +12,8 @@ import {
   ShoppingCart,
   Bell,
   MapPin,
-  Settings
+  Settings,
+  Plus
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,8 +33,16 @@ import {
 // Navigation items based on user role
 const getNavigationItems = (userRole: string) => {
   const baseItems = [
-    { name: "Dashboard", href: "/dispatch-dashboard", icon: Home, roles: ['dispatch'] },
+    { name: "Dashboard", href: "/farmer", icon: Home, roles: ['farmer'] },
   ];
+
+  if (userRole === 'farmer') {
+    return [
+      ...baseItems,
+      { name: "Report Waste", href: "/waste-reports", icon: Plus, roles: ['farmer'] },
+      { name: "My Reports", href: "/my-reports", icon: FileText, roles: ['farmer'] },
+    ];
+  }
 
   if (userRole === 'dispatch') {
     return [
@@ -44,13 +53,6 @@ const getNavigationItems = (userRole: string) => {
       { name: "Notifications", href: "/notifications", icon: Bell, roles: ['dispatch'] },
       { name: "Map", href: "/dispatch-map", icon: MapPin, roles: ['dispatch'] },
       { name: "Settings", href: "/settings", icon: Settings, roles: ['dispatch'] },
-    ];
-  }
-
-  if (userRole === 'farmer') {
-    return [
-      ...baseItems,
-      { name: "My Reports", href: "/waste-reports", icon: FileText, roles: ['farmer'] },
     ];
   }
 

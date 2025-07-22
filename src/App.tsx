@@ -7,7 +7,7 @@ import {
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/hooks/useAuth";
 import Auth from "@/pages/Auth";
-import FarmerDashboard from "@/pages/FarmerDashboard";
+import FarmerDashboard, { MyReports } from "@/pages/FarmerDashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
 import DispatchDashboard from "@/pages/DispatchDashboard";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -172,6 +172,14 @@ function App() {
                   <DashboardLayout>
                     <Settings />
                   </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-reports"
+              element={
+                <ProtectedRoute allowedRoles={["farmer"]}>
+                  <MyReports />
                 </ProtectedRoute>
               }
             />
