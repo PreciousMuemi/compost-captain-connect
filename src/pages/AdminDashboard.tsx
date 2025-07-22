@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { StatCard } from "@/components/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Package, TrendingUp, DollarSign, Truck, ShoppingCart } from "lucide-react";
+import { Users, Package, TrendingUp, DollarSign, Truck, ShoppingCart, Send } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
+import { useToast } from "@/hooks/use-toast";
 
 interface AdminStats {
   totalFarmers: number;
@@ -19,6 +20,7 @@ interface AdminStats {
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [stats, setStats] = useState<AdminStats>({
     totalFarmers: 0,
     totalWasteReports: 0,
@@ -29,6 +31,7 @@ export default function AdminDashboard() {
   });
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [processingPayouts, setProcessingPayouts] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchAdminData();
@@ -102,6 +105,83 @@ export default function AdminDashboard() {
     }
   };
 
+  const markAsCollectedAndPayout = async (reportId: string, farmerId: string, amount: number) => {
+    if (processingPayouts.has(reportId)) return;
+    
+    setProcessingPayouts(prev => new Set(prev).add(reportId));
+    
+    try {
+      // First mark the waste report as collected
+      const { error: updateError } = await supabase
+        .from('waste_reports')
+        .update({ 
+          status: 'collected', 
+          collected_date: new Date().toISOString() 
+        })
+        .eq('id', reportId);
+
+      if (updateError) throw updateError;
+
+      // Get farmer's phone number for payout
+      const { data: farmer, error: farmerError } = await supabase
+        .from('profiles')
+        .select('phone_number, full_name')
+        .eq('id', farmerId)
+        .single();
+
+      if (farmerError) throw farmerError;
+
+      // Create payment record first
+      const { data: payment, error: paymentError } = await supabase
+        .from('payments')
+        .insert({
+          farmer_id: farmerId,
+          amount: amount,
+          payment_type: 'waste_purchase',
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (paymentError) throw paymentError;
+
+      // Initiate B2C payout via edge function
+      const { data, error } = await supabase.functions.invoke('mpesa-b2c-payout', {
+        body: {
+          phoneNumber: farmer.phone_number,
+          amount: amount,
+          paymentId: payment.id
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: "Payout Initiated",
+          description: `Payment of KES ${amount} initiated to ${farmer.full_name}`,
+        });
+      } else {
+        throw new Error(data.error || 'Payout failed');
+      }
+
+      fetchAdminData();
+    } catch (error: any) {
+      console.error('Payout error:', error);
+      toast({
+        title: "Payout Failed",
+        description: error.message || "Failed to process payout",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingPayouts(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(reportId);
+        return newSet;
+      });
+    }
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
@@ -165,6 +245,20 @@ export default function AdminDashboard() {
           />
         </div>
 
+        {/* Pending Waste Reports - B2C Payouts */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Pending Waste Collections</CardTitle>
+            <CardDescription>Mark as collected and process farmer payouts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PendingReports 
+              onMarkCollected={markAsCollectedAndPayout}
+              processingPayouts={processingPayouts}
+            />
+          </CardContent>
+        </Card>
+
         {/* Recent Activity */}
         <Card>
           <CardHeader>
@@ -219,5 +313,106 @@ export default function AdminDashboard() {
         </div>
       </div>
     </DashboardLayout>
+  );
+}
+
+// Component for pending waste reports
+function PendingReports({ 
+  onMarkCollected, 
+  processingPayouts 
+}: { 
+  onMarkCollected: (reportId: string, farmerId: string, amount: number) => void;
+  processingPayouts: Set<string>;
+}) {
+  const [pendingReports, setPendingReports] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPendingReports();
+  }, []);
+
+  const fetchPendingReports = async () => {
+    try {
+      const { data: reports, error } = await supabase
+        .from('waste_reports')
+        .select(`
+          *,
+          profiles:farmer_id (
+            id,
+            full_name,
+            phone_number
+          )
+        `)
+        .in('status', ['reported', 'scheduled'])
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPendingReports(reports || []);
+    } catch (error) {
+      console.error('Error fetching pending reports:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <p className="text-center py-4">Loading pending reports...</p>;
+  }
+
+  if (pendingReports.length === 0) {
+    return <p className="text-muted-foreground text-center py-4">No pending waste reports</p>;
+  }
+
+  const calculatePayment = (wasteType: string, quantityKg: number) => {
+    // Payment rates per kg based on waste type
+    const rates: Record<string, number> = {
+      'animal_manure': 15,
+      'coffee_husks': 10,
+      'rice_hulls': 8,
+      'maize_stalks': 5,
+      'other': 10
+    };
+    return (rates[wasteType] || 10) * quantityKg;
+  };
+
+  return (
+    <div className="space-y-4">
+      {pendingReports.map((report) => {
+        const paymentAmount = calculatePayment(report.waste_type, report.quantity_kg);
+        const isProcessing = processingPayouts.has(report.id);
+        
+        return (
+          <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="font-medium">{report.waste_type.replace('_', ' ')}</h3>
+                <Badge variant="outline">{report.status}</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {report.quantity_kg}kg • {report.location}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Farmer: {report.profiles?.full_name} • {report.profiles?.phone_number}
+              </p>
+              <p className="text-sm font-medium text-green-600">
+                Payment: KES {paymentAmount.toLocaleString()}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {new Date(report.created_at).toLocaleDateString()}
+              </p>
+            </div>
+            <Button
+              onClick={() => onMarkCollected(report.id, report.farmer_id, paymentAmount)}
+              disabled={isProcessing}
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Send className="h-4 w-4" />
+              {isProcessing ? 'Processing...' : 'Collect & Pay'}
+            </Button>
+          </div>
+        );
+      })}
+    </div>
   );
 }

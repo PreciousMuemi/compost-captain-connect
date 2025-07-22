@@ -22,7 +22,7 @@ export default function WasteReports() {
       setLoading(true);
       const { error } = await supabase.from("waste_reports").insert({
         farmer_id: profile.id,
-        waste_type: wasteType,
+        waste_type: wasteType as "animal_manure" | "coffee_husks" | "rice_hulls" | "maize_stalks" | "other",
         quantity_kg: Number(quantity),
         location,
         status: "reported",

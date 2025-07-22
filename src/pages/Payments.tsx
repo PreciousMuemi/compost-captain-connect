@@ -328,13 +328,7 @@ export default function Payments() {
         </Card>
       )}
       
-      <MpesaPaymentModal
-        isOpen={isMpesaModalOpen}
-        onClose={() => setIsMpesaModalOpen(false)}
-        farmerId={selectedFarmer?.id}
-        farmerName={selectedFarmer?.name}
-        onSuccess={fetchPayments}
-      />
+      {/* Note: The old FarmerPaymentModal component needs to be replaced or updated */}
     </div>
   );
 }

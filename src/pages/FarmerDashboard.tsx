@@ -5,8 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/StatCard";
-import { FarmerPaymentModal } from "@/components/FarmerPaymentModal";
-import { FarmerSidebar } from "@/components/FarmerSidebar";
+import { MpesaPaymentModal } from "@/components/MpesaPaymentModal";
+import DashboardLayout from "@/components/DashboardLayout";
 import { Plus, TrendingUp, Package, Clock, ShoppingCart, Leaf } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -303,7 +303,7 @@ export default function FarmerDashboard() {
       </div>
 
       {/* Product Purchase Modal */}
-      <FarmerPaymentModal
+      <MpesaPaymentModal
         isOpen={showPaymentModal}
         onClose={() => {
           setShowPaymentModal(false);
