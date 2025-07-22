@@ -8,3 +8,12 @@ verify_jwt = false
 
 [functions.mpesa-payment]
 verify_jwt = false
+
+[functions.mpesa-b2c-payout]
+verify_jwt = false
+
+[functions.mpesa-c2b-confirmation]
+verify_jwt = false
+
+[functions.mpesa-c2b-validation]
+verify_jwt = false

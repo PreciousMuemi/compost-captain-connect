@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/StatCard";
-import { FarmerPaymentModal } from "@/components/FarmerPaymentModal";
+import { MpesaPaymentModal } from "@/components/MpesaPaymentModal";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Plus, TrendingUp, Package, Clock, ShoppingCart, Leaf } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -364,7 +364,7 @@ export default function FarmerDashboard() {
       </div>
 
       {/* Product Purchase Modal */}
-      <FarmerPaymentModal
+      <MpesaPaymentModal
         isOpen={showPaymentModal}
         onClose={() => {
           setShowPaymentModal(false);
