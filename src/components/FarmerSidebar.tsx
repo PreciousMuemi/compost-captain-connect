@@ -36,13 +36,13 @@ export const FarmerSidebar = ({ children }: SidebarProps) => {
     { 
       icon: Package, 
       label: 'Report Waste', 
-      path: '/farmer/report-waste',
+      path: '/farmer/waste-reports',
       description: 'Submit new waste reports'
     },
     { 
       icon: Clock, 
       label: 'My Reports', 
-      path: '/farmer/reports',
+      path: '/farmer/waste-reports',
       description: 'View waste report status'
     },
     { 
@@ -54,7 +54,7 @@ export const FarmerSidebar = ({ children }: SidebarProps) => {
     { 
       icon: TrendingUp, 
       label: 'Earnings', 
-      path: '/farmer/earnings',
+      path: '/farmer/payments',
       description: 'View payments & earnings'
     },
     { 
@@ -83,7 +83,7 @@ export const FarmerSidebar = ({ children }: SidebarProps) => {
       <Button
         variant="ghost"
         size="sm"
-        className="fixed top-4 left-4 z-50 md:hidden"
+        className="fixed top-4 left-4 z-50 md:hidden bg-white shadow-md border"
         onClick={() => setIsOpen(!isOpen)}
       >
         {isOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
@@ -91,8 +91,8 @@ export const FarmerSidebar = ({ children }: SidebarProps) => {
 
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out
-        md:relative md:translate-x-0
+        fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out
+        md:relative md:translate-x-0 md:shadow-lg
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex flex-col h-full">
@@ -140,10 +140,10 @@ export const FarmerSidebar = ({ children }: SidebarProps) => {
                     setIsOpen(false);
                   }}
                   className={`
-                    w-full flex items-center space-x-3 px-3 py-3 rounded-lg text-left transition-colors
+                    w-full flex items-center space-x-3 px-3 py-4 rounded-lg text-left transition-colors touch-manipulation
                     ${isActive 
                       ? 'bg-green-100 text-green-700 border border-green-200' 
-                      : 'text-gray-700 hover:bg-gray-100'
+                      : 'text-gray-700 hover:bg-gray-100 active:bg-gray-200'
                     }
                   `}
                 >
@@ -178,13 +178,15 @@ export const FarmerSidebar = ({ children }: SidebarProps) => {
       {/* Mobile overlay */}
       {isOpen && (
         <div 
-          className="fixed inset-0 z-30 bg-black bg-opacity-50 md:hidden"
+          className="fixed inset-0 z-30 bg-black bg-opacity-50 md:hidden transition-opacity duration-300"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Mobile header spacer */}
+        <div className="h-16 md:hidden"></div>
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>

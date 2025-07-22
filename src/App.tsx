@@ -7,9 +7,11 @@ import {
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/hooks/useAuth";
 import Auth from "@/pages/Auth";
-import FarmerDashboard, { MyReports } from "@/pages/FarmerDashboard";
+import FarmerDashboard from "@/pages/FarmerDashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
 import DispatchDashboard from "@/pages/DispatchDashboard";
+import WasteReports from "@/pages/WasteReports";
+import FarmerPayments from "@/pages/FarmerPayments";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,11 +22,12 @@ import DispatchMapPage from "@/pages/dispatch-map";
 import Settings from "@/pages/settings";
 import DashboardLayout from "@/components/DashboardLayout";
 import Farmers from "@/pages/Farmers";
-import WasteReports from "@/pages/WasteReports";
+//import WasteReports from "@/pages/WasteReports";
 import Payments from "@/pages/Payments";
 import Analytics from "@/pages/Analytics";
 import FarmerProfile from "@/pages/FarmerProfile";
 import FarmerHistory from "@/pages/FarmerHistory";
+import  MyReports  from "@/pages/FarmerDashboard";
 
 function App() {
   return (
@@ -46,6 +49,22 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={["farmer"]}>
                   <FarmerDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/farmer/waste-reports"
+              element={
+                <ProtectedRoute allowedRoles={["farmer"]}>
+                  <WasteReports />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/farmer/payments"
+              element={
+                <ProtectedRoute allowedRoles={["farmer"]}>
+                  <FarmerPayments />
                 </ProtectedRoute>
               }
             />
