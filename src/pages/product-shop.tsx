@@ -96,7 +96,8 @@ function ProductShop({ profile }) {
       // 3. Create order items
       for (const item of cart) {
         await supabase
-          .from("order_items")
+          .from(
+            "order_items")
           .insert({
             order_id: order.id,
             product_id: item.product.id,
