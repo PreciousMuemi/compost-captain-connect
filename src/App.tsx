@@ -28,8 +28,9 @@ import Analytics from "@/pages/Analytics";
 import FarmerProfile from "@/pages/FarmerProfile";
 import FarmerHistory from "@/pages/FarmerHistory";
 import  MyReports  from "@/pages/FarmerDashboard";
-
+import ProductShop from "./pages/product-shop";
 function App() {
+  const { profile } = useAuth();
   return (
     <ErrorBoundary>
       <Router>
@@ -199,6 +200,14 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={["farmer"]}>
                   <MyReports />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/buy-products"
+              element={
+                <ProtectedRoute allowedRoles={["farmer"]}>
+                  <ProductShop profile={profile} />
                 </ProtectedRoute>
               }
             />
