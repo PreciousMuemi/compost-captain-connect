@@ -40,7 +40,17 @@ CREATE POLICY "Admins can view all tickets" ON tickets
   FOR SELECT USING (
     EXISTS (
       SELECT 1 FROM profiles 
-      WHERE profiles.id = auth.uid() 
+      WHERE profiles.user_id = auth.uid() 
+      AND profiles.role = 'admin'
+    )
+  );
+
+-- Policy to allow admins to update all tickets
+CREATE POLICY "Admins can update all tickets" ON tickets
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM profiles 
+      WHERE profiles.user_id = auth.uid() 
       AND profiles.role = 'admin'
     )
   );

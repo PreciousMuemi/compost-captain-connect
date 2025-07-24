@@ -35,6 +35,7 @@ import FarmerOrders from "@/pages/FarmerOrders";
 import { FloatingTicketButton } from "@/components/FloatingTicketButton";
 import { TopRightHeader } from "@/components/TopRightHeader";
 import Profile from "@/pages/Profile";
+import AdminTickets from "@/pages/AdminTickets";
 
 function DashboardSelector() {
   const { profile, loading, signOut } = useAuth();
@@ -97,6 +98,9 @@ function AppContent() {
   
   // Don't show TopRightHeader on auth page
   const showTopRightHeader = location.pathname !== '/auth';
+  
+  // Show floating ticket button only for farmers and dispatch users, not admin
+  const showFloatingTicket = profile?.role === 'farmer' || profile?.role === 'dispatch';
 
   return (
     <>
@@ -304,10 +308,20 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/admin-tickets"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <DashboardLayout>
+                <AdminTickets />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Toaster />
-      <FloatingTicketButton />
+      {showFloatingTicket && <FloatingTicketButton />}
       {showTopRightHeader && <TopRightHeader />}
     </>
   );

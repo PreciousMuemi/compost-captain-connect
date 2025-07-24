@@ -111,17 +111,17 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-      <img src="/logo.png" alt="Captain Compost Logo" className="h-20 w-20 mb-4" />
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">Captain Compost</h1>
-        <p className="text-xs text-gray-500">EST. 2025</p>
-      </div>
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-green-800">Captain Compost</CardTitle>
-          <CardDescription>
-            AI-Powered Waste-to-Manure Management System
-          </CardDescription>
+          <div className="flex flex-col items-center space-y-4">
+            <img src="/logo.png" alt="Captain Compost Logo" className="h-12 w-12" />
+            <div>
+              <CardTitle className="text-2xl font-bold text-green-800">Captain Compost</CardTitle>
+              <CardDescription>
+                AI-Powered Waste-to-Manure Management System
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
