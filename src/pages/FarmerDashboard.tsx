@@ -11,6 +11,8 @@ import { Plus, TrendingUp, Package, Clock, ShoppingCart, Leaf } from "lucide-rea
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { FarmerSidebar } from "@/components/FarmerSidebar";
+import { WasteReportForm } from "@/components/WasteReportForm"; // Create this as a form-only component
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface FarmerStats {
   totalReports: number;
@@ -55,6 +57,7 @@ export default function FarmerDashboard() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   useEffect(() => {
     if (profile?.id) {
@@ -109,23 +112,20 @@ export default function FarmerDashboard() {
         setRecentReports(reports.slice(0, 5));
       }
 
-      // Set default products (inventory table doesn't exist yet)
-      setProducts([
-        {
-          id: 'processed_manure',
-          name: 'Processed Organic Manure',
-          price_per_kg: 50,
-          available_kg: 100,
-          description: 'High-quality processed organic manure perfect for farming'
-        },
-        {
-          id: 'pellets',
-          name: 'Organic Fertilizer Pellets',
-          price_per_kg: 80,
-          available_kg: 50,
-          description: 'Premium organic fertilizer pellets for enhanced crop yield'
-        }
-      ]);
+      // Fetch products from Supabase
+      const { data: productsFromDb, error: productsError } = await supabase
+        .from('products')
+        .select('*');
+      if (!productsError && productsFromDb) {
+        setProducts(
+          productsFromDb.map((p) => ({
+            ...p,
+            id: String(p.id), // convert id to string
+            price_per_kg: p.price,
+            available_kg: 100
+          }))
+        );
+      }
     } catch (error) {
       console.error('Error fetching farmer data:', error);
     } finally {
@@ -158,150 +158,148 @@ export default function FarmerDashboard() {
   }
 
   return (
-    <FarmerSidebar>
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Welcome, {profile?.full_name}</h1>
-            <p className="text-muted-foreground">Farmer Dashboard</p>
-          </div>
-          <Button onClick={() => navigate('/farmer/waste-reports')}>
-            <Plus className="h-4 w-4 mr-2" />
-            Report Waste
-          </Button>
+    <>
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Welcome, {profile?.full_name}</h1>
+          <p className="text-muted-foreground">Farmer Dashboard</p>
         </div>
+        <Button onClick={() => setIsReportModalOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Report Waste
+        </Button>
+      </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <StatCard
-            title="Total Reports"
-            value={stats.totalReports}
-            icon={Package}
-            description="All waste reports"
-          />
-          <StatCard
-            title="Pending Pickup"
-            value={stats.pendingReports}
-            icon={Clock}
-            description="Awaiting collection"
-          />
-          <StatCard
-            title="Total Earnings"
-            value={`KES ${stats.totalEarnings.toLocaleString()}`}
-            icon={TrendingUp}
-            description="From waste sales"
-          />
-          <StatCard
-            title="Product Orders"
-            value={stats.totalOrders}
-            icon={ShoppingCart}
-            description="Orders placed"
-          />
-          <StatCard
-            title="Total Spent"
-            value={`KES ${stats.totalSpent.toLocaleString()}`}
-            icon={Package}
-            description="On products"
-          />
-        </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <StatCard
+          title="Total Reports"
+          value={stats.totalReports}
+          icon={Package}
+          description="All waste reports"
+        />
+        <StatCard
+          title="Pending Pickup"
+          value={stats.pendingReports}
+          icon={Clock}
+          description="Awaiting collection"
+        />
+        <StatCard
+          title="Total Earnings"
+          value={`KES ${stats.totalEarnings.toLocaleString()}`}
+          icon={TrendingUp}
+          description="From waste sales"
+        />
+        <StatCard
+          title="Product Orders"
+          value={stats.totalOrders}
+          icon={ShoppingCart}
+          description="Orders placed"
+        />
+        <StatCard
+          title="Total Spent"
+          value={`KES ${stats.totalSpent.toLocaleString()}`}
+          icon={Package}
+          description="On products"
+        />
+      </div>
 
-        {/* Available Products */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Leaf className="h-5 w-5" />
-              Buy Organic Products
-            </CardTitle>
-            <CardDescription>Purchase processed manure and fertilizer pellets</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {products.map((product) => (
-                <div key={product.id} className="border rounded-lg p-4 space-y-3">
+      {/* Available Products */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Leaf className="h-5 w-5" />
+            Buy Organic Products
+          </CardTitle>
+          <CardDescription>Purchase processed manure and fertilizer pellets</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {products.map((product) => (
+              <div key={product.id} className="border rounded-lg p-4 space-y-3">
+                <div>
+                  <h3 className="font-medium">{product.name}</h3>
+                  <p className="text-sm text-muted-foreground">{product.description}</p>
+                </div>
+                <div className="flex justify-between items-center">
                   <div>
-                    <h3 className="font-medium">{product.name}</h3>
-                    <p className="text-sm text-muted-foreground">{product.description}</p>
+                    <p className="text-lg font-bold">KES {product.price_per_kg ? product.price_per_kg : 0}/kg</p>
+                    <p className="text-sm text-muted-foreground">
+                      {product.available_kg} kg available
+                    </p>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-lg font-bold">KES {product.price_per_kg}/kg</p>
-                      <p className="text-sm text-muted-foreground">
-                        {product.available_kg} kg available
-                      </p>
-                    </div>
-                    <Button 
-                      onClick={() => handleBuyProduct(product)}
-                      disabled={product.available_kg === 0}
-                      className="flex items-center gap-2"
-                    >
-                      <ShoppingCart className="h-4 w-4" />
-                      Buy Now
-                    </Button>
+                  <Button 
+                    onClick={() => handleBuyProduct(product)}
+                    disabled={product.available_kg === 0}
+                    className="flex items-center gap-2"
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                    Buy Now
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent Reports */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Waste Reports</CardTitle>
+          <CardDescription>Your latest waste collection reports</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {recentReports.length > 0 ? (
+            <div className="space-y-4">
+              {recentReports.map((report) => (
+                <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <h3 className="font-medium">{report.waste_type.replace('_', ' ')}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {report.quantity_kg}kg • {report.location}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(report.created_at).toLocaleDateString()}
+                    </p>
                   </div>
+                  <Badge className={getStatusColor(report.status)}>
+                    {report.status}
+                  </Badge>
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
+          ) : (
+            <p className="text-muted-foreground text-center py-4">
+              No waste reports yet. Start by reporting your first waste!
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
-        {/* Recent Reports */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Waste Reports</CardTitle>
-            <CardDescription>Your latest waste collection reports</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {recentReports.length > 0 ? (
-              <div className="space-y-4">
-                {recentReports.map((report) => (
-                  <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <h3 className="font-medium">{report.waste_type.replace('_', ' ')}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {report.quantity_kg}kg • {report.location}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(report.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <Badge className={getStatusColor(report.status)}>
-                      {report.status}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-center py-4">
-                No waste reports yet. Start by reporting your first waste!
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button variant="outline" onClick={() => navigate('/farmer/waste-reports')}>
-                <Plus className="h-4 w-4 mr-2" />
-                Report New Waste
-              </Button>
-              <Button variant="outline" onClick={() => navigate('/farmer/waste-reports')}>
-                <Clock className="h-4 w-4 mr-2" />
-                Check Status
-              </Button>
-              <Button variant="outline" onClick={() => navigate('/farmer/payments')}>
-                <TrendingUp className="h-4 w-4 mr-2" />
-                View Payments
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Quick Actions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Button variant="outline" onClick={() => navigate('/farmer/waste-reports')}>
+              <Plus className="h-4 w-4 mr-2" />
+              Report New Waste
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/farmer/waste-reports')}>
+              <Clock className="h-4 w-4 mr-2" />
+              Check Status
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/farmer/payments')}>
+              <TrendingUp className="h-4 w-4 mr-2" />
+              View Payments
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Product Purchase Modal */}
       <MpesaPaymentModal
@@ -319,6 +317,13 @@ export default function FarmerDashboard() {
           fetchFarmerData(); // Refresh data
         }}
       />
-    </FarmerSidebar>
+
+      {/* Waste Report Modal */}
+      <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
+        <DialogContent>
+          <WasteReportForm onSuccess={() => setIsReportModalOpen(false)} />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

@@ -33,6 +33,7 @@ function ProductShop({ profile }) {
       }
       return [...prev, { product, quantity: 1 }];
     });
+    console.log(product.id, cart)
   };
 
   // Remove item from cart
@@ -55,6 +56,13 @@ function ProductShop({ profile }) {
   // STK Push Checkout
   const handleCheckout = async () => {
     if (!phoneNumber) return alert("Enter phone number");
+    if (cart.length === 0) return alert("Your cart is empty.");
+
+    // Check for invalid product prices
+    if (cart.some(item => !item.product.price && item.product.price !== 0)) {
+      return alert("One or more products in your cart have no price.");
+    }
+
     setLoading(true);
     try {
       // 1. Create customer if needed
@@ -78,7 +86,19 @@ function ProductShop({ profile }) {
       // 2. Create order
       const totalAmount = getTotal();
       const totalQuantity = cart.reduce((sum, item) => sum + item.quantity, 0);
-      const avgPrice = cart.reduce((sum, item) => sum + item.product.price, 0) / cart.length;
+
+      // Calculate avgPrice safely
+      const avgPrice =
+        cart.length > 0
+          ? cart.reduce((sum, item) => sum + (item.product.price || 0), 0) / cart.length
+          : 0;
+
+      // Prevent order if avgPrice is 0 (shouldn't happen if you check above, but double safety)
+      if (avgPrice === 0) {
+        alert("Invalid product price. Cannot proceed with checkout.");
+        setLoading(false);
+        return;
+      }
 
       const { data: order } = await supabase
         .from("orders")
@@ -86,8 +106,8 @@ function ProductShop({ profile }) {
           customer_id: customer.id,
           total_amount: totalAmount,
           status: "pending",
-          price_per_kg: avgPrice,      // or use cart[0].product.price if only one product
-          quantity_kg: totalQuantity,  // or use cart[0].quantity if only one product
+          price_per_kg: avgPrice,
+          quantity_kg: totalQuantity,
           // add other required fields if needed
         })
         .select("id")

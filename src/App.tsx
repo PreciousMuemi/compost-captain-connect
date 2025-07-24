@@ -29,6 +29,8 @@ import FarmerProfile from "@/pages/FarmerProfile";
 import FarmerHistory from "@/pages/FarmerHistory";
 import  MyReports  from "@/pages/FarmerDashboard";
 import ProductShop from "./pages/product-shop";
+import { FarmerSidebar } from "@/components/FarmerSidebar";
+import FarmerOrders from "@/pages/FarmerOrders";
 function App() {
   const { profile } = useAuth();
   return (
@@ -49,15 +51,19 @@ function App() {
               path="/farmer"
               element={
                 <ProtectedRoute allowedRoles={["farmer"]}>
-                  <FarmerDashboard />
+                  <FarmerSidebar>
+                    <FarmerDashboard />
+                  </FarmerSidebar>
                 </ProtectedRoute>
               }
             />
             <Route
-              path="/farmer/waste-reports"
+              path="/waste-reports"
               element={
                 <ProtectedRoute allowedRoles={["farmer"]}>
-                  <WasteReports />
+                  <FarmerSidebar>
+                    <WasteReports />
+                  </FarmerSidebar>
                 </ProtectedRoute>
               }
             />
@@ -65,7 +71,19 @@ function App() {
               path="/farmer/payments"
               element={
                 <ProtectedRoute allowedRoles={["farmer"]}>
-                  <FarmerPayments />
+                  <FarmerSidebar>
+                    <FarmerPayments />
+                  </FarmerSidebar>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/farmer/orders"
+              element={
+                <ProtectedRoute allowedRoles={["farmer"]}>
+                  <FarmerSidebar>
+                    <FarmerOrders />
+                  </FarmerSidebar>
                 </ProtectedRoute>
               }
             />
@@ -207,7 +225,9 @@ function App() {
               path="/buy-products"
               element={
                 <ProtectedRoute allowedRoles={["farmer"]}>
-                  <ProductShop profile={profile} />
+                  <FarmerSidebar>
+                    <ProductShop profile={profile} />
+                  </FarmerSidebar>
                 </ProtectedRoute>
               }
             />

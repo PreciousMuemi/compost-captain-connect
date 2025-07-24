@@ -33,22 +33,17 @@ export const FarmerSidebar = ({ children }: SidebarProps) => {
       path: '/farmer',
       description: 'Overview & Stats'
     },
-    { 
-      icon: Package, 
-      label: 'Report Waste', 
-      path: '/farmer/waste-reports',
-      description: 'Submit new waste reports'
-    },
+   
     { 
       icon: Clock, 
       label: 'My Reports', 
-      path: '/farmer/waste-reports',
+      path: '/waste-reports',
       description: 'View waste report status'
     },
     { 
       icon: ShoppingCart, 
       label: 'Buy Products', 
-      path: '/farmer/products',
+      path: '/buy-products',
       description: 'Purchase organic products'
     },
     { 

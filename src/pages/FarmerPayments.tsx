@@ -43,6 +43,7 @@ export default function FarmerPayments() {
     thisMonthEarnings: 0
   });
   const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState([]);
 
   useEffect(() => {
     fetchPayments();
@@ -52,16 +53,26 @@ export default function FarmerPayments() {
     if (!profile?.id) return;
     
     try {
-      const { data, error } = await supabase
+      const { data: payments } = await supabase
         .from('payments')
         .select('*')
-        .eq('farmer_id', profile.id)
-        .order('created_at', { ascending: false });
+        .eq('farmer_id', profile.id);
 
-      if (error) throw error;
-      
-      const paymentsData = data || [];
+      // Fetch orders as customer
+      const { data: customerRecord } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('phone_number', profile.phone_number)
+        .maybeSingle();
+
+      const { data: orders } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('customer_id', customerRecord?.id || '');
+
+      const paymentsData = payments || [];
       setPayments(paymentsData);
+      setOrders(orders || []);
 
       // Calculate stats
       const totalEarnings = paymentsData
@@ -142,7 +153,7 @@ export default function FarmerPayments() {
   }
 
   return (
-    <FarmerSidebar>
+    <>
       <div className="container mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
@@ -318,7 +329,38 @@ export default function FarmerPayments() {
             </div>
           </CardContent>
         </Card>
+
+        <div className="p-6">
+          <h2 className="text-xl font-bold mb-4">Payments</h2>
+          {payments.length === 0 ? (
+            <div>No payments found.</div>
+          ) : (
+            payments.map(payment => (
+              <div key={payment.id} className="mb-2 p-2 border rounded">
+                <div><b>Amount:</b> KES {payment.amount}</div>
+                <div><b>Status:</b> {payment.status}</div>
+                <div><b>Type:</b> {payment.payment_type}</div>
+                <div><b>Date:</b> {new Date(payment.created_at).toLocaleString()}</div>
+              </div>
+            ))
+          )}
+
+          <h2 className="text-xl font-bold mt-8 mb-4">Product Orders</h2>
+          {orders.length === 0 ? (
+            <div>No orders found.</div>
+          ) : (
+            orders.map(order => (
+              <div key={order.id} className="mb-2 p-2 border rounded">
+                <div><b>Total:</b> KES {order.total_amount}</div>
+                <div><b>Status:</b> {order.status}</div>
+                <div><b>Quantity:</b> {order.quantity_kg} kg</div>
+                <div><b>Price per kg:</b> KES {order.price_per_kg}</div>
+                <div><b>Date:</b> {new Date(order.created_at).toLocaleString()}</div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
-    </FarmerSidebar>
+    </>
   );
 }
