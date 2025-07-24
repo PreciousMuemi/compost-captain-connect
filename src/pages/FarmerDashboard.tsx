@@ -65,6 +65,22 @@ export default function FarmerDashboard() {
     }
   }, [profile]);
 
+  useEffect(() => {
+    if (!profile?.id) return;
+    const channel = supabase
+      .channel('public:notifications')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, payload => {
+        if (payload.new.user_id === profile.id) {
+          toast({
+            title: "Notification",
+            description: payload.new.message,
+          });
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [profile]);
+
   const fetchFarmerData = async () => {
     try {
       // Fetch waste reports for this farmer only
@@ -324,6 +340,36 @@ export default function FarmerDashboard() {
           <WasteReportForm onSuccess={() => setIsReportModalOpen(false)} />
         </DialogContent>
       </Dialog>
+
+      {/* Ticket List */}
+      <TicketList />
     </>
+  );
+}
+
+export function TicketList() {
+  const { profile } = useAuth();
+  const [tickets, setTickets] = useState([]);
+
+  useEffect(() => {
+    if (profile?.id) {
+      supabase.from("tickets").select("*").eq("user_id", profile.id).then(({ data }) => setTickets(data || []));
+    }
+  }, [profile]);
+
+  return (
+    <div>
+      <h2 className="text-xl font-bold mb-2">My Tickets</h2>
+      {tickets.length === 0 ? <div>No tickets found.</div> : (
+        tickets.map(ticket => (
+          <div key={ticket.id} className="mb-2 p-2 border rounded">
+            <div><b>Subject:</b> {ticket.subject}</div>
+            <div><b>Status:</b> {ticket.status}</div>
+            <div><b>Message:</b> {ticket.message}</div>
+            <div><b>Date:</b> {new Date(ticket.created_at).toLocaleString()}</div>
+          </div>
+        ))
+      )}
+    </div>
   );
 }
