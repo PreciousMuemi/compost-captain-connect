@@ -1,366 +1,322 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { FarmerSidebar } from "@/components/FarmerSidebar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { 
-  DollarSign, 
-  TrendingUp, 
-  Calendar,
-  Package,
-  Download,
-  Eye
-} from "lucide-react";
+import { DollarSign, Clock, CheckCircle, AlertCircle, TrendingUp, ShoppingCart } from "lucide-react";
 
 interface Payment {
   id: string;
   amount: number;
-  payment_type: string;
   status: string;
+  payment_type: string;
   created_at: string;
-  mpesa_transaction_id?: string;
-  order_id?: string;
 }
 
-interface PaymentStats {
-  totalEarnings: number;
-  pendingPayments: number;
-  completedPayments: number;
-  thisMonthEarnings: number;
+interface Order {
+  id: string;
+  total_amount: number;
+  status: string;
+  created_at: string;
+  order_items: Array<{
+    quantity: number;
+    products: {
+      name: string;
+    };
+  }>;
 }
 
 export default function FarmerPayments() {
   const { profile } = useAuth();
-  const { toast } = useToast();
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [stats, setStats] = useState<PaymentStats>({
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
     totalEarnings: 0,
+    totalSpent: 0,
     pendingPayments: 0,
     completedPayments: 0,
-    thisMonthEarnings: 0
   });
-  const [loading, setLoading] = useState(true);
-  const [orders, setOrders] = useState([]);
 
   useEffect(() => {
-    fetchPayments();
-  }, [profile]);
+    if (profile?.id) {
+      fetchPaymentData();
+    }
+  }, [profile?.id]);
 
-  const fetchPayments = async () => {
+  const fetchPaymentData = async () => {
     if (!profile?.id) return;
-    
-    try {
-      const { data: payments } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('farmer_id', profile.id);
 
-      // Fetch orders as customer
+    setLoading(true);
+    try {
+      // Fetch payments for this farmer
+      const { data: paymentsData, error: paymentsError } = await supabase
+        .from("payments")
+        .select("*")
+        .eq("farmer_id", profile.id)
+        .order("created_at", { ascending: false });
+
+      if (paymentsError) {
+        console.error("Error fetching payments:", paymentsError);
+      }
+
+      // Get customer record for this farmer to fetch orders
       const { data: customerRecord } = await supabase
-        .from('customers')
-        .select('id')
-        .eq('phone_number', profile.phone_number)
+        .from("customers")
+        .select("id")
+        .eq("phone_number", profile.phone_number)
         .maybeSingle();
 
-      const { data: orders } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('customer_id', customerRecord?.id || '');
+      let ordersData = [];
+      if (customerRecord) {
+        const { data: orders, error: ordersError } = await supabase
+          .from("orders")
+          .select(`
+            id,
+            total_amount,
+            status,
+            created_at,
+            order_items (
+              quantity,
+              products (
+                name
+              )
+            )
+          `)
+          .eq("customer_id", customerRecord.id)
+          .order("created_at", { ascending: false });
 
-      const paymentsData = payments || [];
-      setPayments(paymentsData);
-      setOrders(orders || []);
+        if (ordersError) {
+          console.error("Error fetching orders:", ordersError);
+        } else {
+          ordersData = orders || [];
+        }
+      }
+
+      const payments = paymentsData || [];
+      const orders = ordersData || [];
 
       // Calculate stats
-      const totalEarnings = paymentsData
-        .filter(p => p.status === 'completed')
+      const totalEarnings = payments
+        .filter(p => p.status === "completed")
         .reduce((sum, p) => sum + p.amount, 0);
 
-      const pendingPayments = paymentsData
-        .filter(p => p.status === 'pending')
-        .reduce((sum, p) => sum + p.amount, 0);
+      const totalSpent = orders
+        .filter(o => o.status === "confirmed" || o.status === "delivered")
+        .reduce((sum, o) => sum + o.total_amount, 0);
 
-      const completedPayments = paymentsData
-        .filter(p => p.status === 'completed').length;
-
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
-      const thisMonthEarnings = paymentsData
-        .filter(p => {
-          const paymentDate = new Date(p.created_at);
-          return p.status === 'completed' && 
-                 paymentDate.getMonth() === currentMonth && 
-                 paymentDate.getFullYear() === currentYear;
-        })
-        .reduce((sum, p) => sum + p.amount, 0);
+      const pendingPayments = payments.filter(p => p.status === "pending").length;
+      const completedPayments = payments.filter(p => p.status === "completed").length;
 
       setStats({
         totalEarnings,
+        totalSpent,
         pendingPayments,
         completedPayments,
-        thisMonthEarnings
       });
 
+      setPayments(payments);
+      setOrders(orders);
     } catch (error) {
-      console.error('Error fetching payments:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch payment data",
-        variant: "destructive",
-      });
+      console.error("Error fetching payment data:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getPaymentStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'failed': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "pending": return <Clock className="h-4 w-4 text-yellow-500" />;
+      case "completed": return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case "failed": return <AlertCircle className="h-4 w-4 text-red-500" />;
+      default: return <DollarSign className="h-4 w-4 text-gray-500" />;
     }
   };
 
-  const exportPayments = () => {
-    // Simple CSV export
-    const csvContent = "data:text/csv;charset=utf-8," + 
-      "Date,Amount,Type,Status,Transaction ID\n" +
-      payments.map(p => 
-        `${new Date(p.created_at).toLocaleDateString()},${p.amount},${p.payment_type},${p.status},${p.mpesa_transaction_id || 'N/A'}`
-      ).join("\n");
+  const getOrderStatusIcon = (status: string) => {
+    switch (status) {
+      case "pending": return <Clock className="h-4 w-4 text-yellow-500" />;
+      case "confirmed": return <CheckCircle className="h-4 w-4 text-blue-500" />;
+      case "delivered": return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case "cancelled": return <AlertCircle className="h-4 w-4 text-red-500" />;
+      default: return <ShoppingCart className="h-4 w-4 text-gray-500" />;
+    }
+  };
 
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "payments_export.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "pending": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300";
+      case "completed": return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300";
+      case "confirmed": return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300";
+      case "delivered": return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300";
+      case "failed": return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300";
+      case "cancelled": return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300";
+      default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
+    }
   };
 
   if (loading) {
     return (
-      <FarmerSidebar>
-        <div className="flex items-center justify-center min-h-screen">
+      <div className="p-4 md:p-6">
+        <div className="flex items-center justify-center min-h-[400px]">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
         </div>
-      </FarmerSidebar>
+      </div>
     );
   }
 
   return (
-    <>
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Payments & Earnings</h1>
-            <p className="text-muted-foreground">Track your payments and earnings from waste sales</p>
-          </div>
-          <Button onClick={exportPayments} variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Earnings</p>
-                  <p className="text-2xl font-bold">KES {stats.totalEarnings.toLocaleString()}</p>
-                </div>
-                <DollarSign className="h-8 w-8 text-green-600" />
+    <div className="p-4 md:p-6 space-y-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-800">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">KES {stats.totalEarnings.toLocaleString()}</p>
+                <p className="text-sm text-green-600/70 dark:text-green-400/70">Total Earnings</p>
               </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Pending Payments</p>
-                  <p className="text-2xl font-bold">KES {stats.pendingPayments.toLocaleString()}</p>
-                </div>
-                <TrendingUp className="h-8 w-8 text-yellow-600" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Completed Payments</p>
-                  <p className="text-2xl font-bold">{stats.completedPayments}</p>
-                </div>
-                <Package className="h-8 w-8 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">This Month</p>
-                  <p className="text-2xl font-bold">KES {stats.thisMonthEarnings.toLocaleString()}</p>
-                </div>
-                <Calendar className="h-8 w-8 text-purple-600" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Payments List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Payment History</CardTitle>
-            <CardDescription>
-              View all your payment transactions and their status
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {payments.length > 0 ? (
-              <div className="space-y-4">
-                {payments.map((payment) => (
-                  <div key={payment.id} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                          <DollarSign className="h-5 w-5 text-green-600" />
-                        </div>
-                        <div>
-                          <h3 className="font-medium">
-                            KES {payment.amount.toLocaleString()}
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            {payment.payment_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <Badge className={getStatusColor(payment.status)}>
-                          {payment.status.replace('_', ' ')}
-                        </Badge>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {new Date(payment.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {payment.mpesa_transaction_id && (
-                      <div className="flex items-center justify-between text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                        <span>M-Pesa Transaction ID:</span>
-                        <span className="font-mono">{payment.mpesa_transaction_id}</span>
-                      </div>
-                    )}
-                    
-                    {payment.order_id && (
-                      <div className="flex items-center justify-between text-sm text-gray-600 mt-2">
-                        <span>Order ID:</span>
-                        <span className="font-mono">#{payment.order_id.slice(-8)}</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No payments yet</h3>
-                <p className="text-gray-600 mb-4">
-                  Payments will appear here once you start selling waste or purchasing products
-                </p>
-                <Button onClick={() => window.location.href = '/farmer'}>
-                  <Eye className="h-4 w-4 mr-2" />
-                  View Dashboard
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Payment Methods */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Payment Methods</CardTitle>
-            <CardDescription>
-              Available payment methods for receiving earnings
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="border rounded-lg p-4 bg-green-50">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">MP</span>
-                  </div>
-                  <h3 className="font-medium">M-Pesa</h3>
-                </div>
-                <p className="text-sm text-gray-600 mb-3">
-                  Receive payments directly to your M-Pesa account
-                </p>
-                <p className="text-xs text-green-600 font-medium">
-                  ✓ Instant transfers • ✓ No fees
-                </p>
-              </div>
-              
-              <div className="border rounded-lg p-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <DollarSign className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <h3 className="font-medium">Bank Transfer</h3>
-                </div>
-                <p className="text-sm text-gray-600 mb-3">
-                  Transfer earnings to your bank account
-                </p>
-                <p className="text-xs text-gray-500">
-                  Available for large amounts
-                </p>
-              </div>
+              <DollarSign className="h-8 w-8 text-green-500" />
             </div>
           </CardContent>
         </Card>
 
-        <div className="p-6">
-          <h2 className="text-xl font-bold mb-4">Payments</h2>
-          {payments.length === 0 ? (
-            <div>No payments found.</div>
-          ) : (
-            payments.map(payment => (
-              <div key={payment.id} className="mb-2 p-2 border rounded">
-                <div><b>Amount:</b> KES {payment.amount}</div>
-                <div><b>Status:</b> {payment.status}</div>
-                <div><b>Type:</b> {payment.payment_type}</div>
-                <div><b>Date:</b> {new Date(payment.created_at).toLocaleString()}</div>
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-800">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">KES {stats.totalSpent.toLocaleString()}</p>
+                <p className="text-sm text-blue-600/70 dark:text-blue-400/70">Total Spent</p>
               </div>
-            ))
-          )}
+              <ShoppingCart className="h-8 w-8 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
 
-          <h2 className="text-xl font-bold mt-8 mb-4">Product Orders</h2>
-          {orders.length === 0 ? (
-            <div>No orders found.</div>
-          ) : (
-            orders.map(order => (
-              <div key={order.id} className="mb-2 p-2 border rounded">
-                <div><b>Total:</b> KES {order.total_amount}</div>
-                <div><b>Status:</b> {order.status}</div>
-                <div><b>Quantity:</b> {order.quantity_kg} kg</div>
-                <div><b>Price per kg:</b> KES {order.price_per_kg}</div>
-                <div><b>Date:</b> {new Date(order.created_at).toLocaleString()}</div>
+        <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 border-yellow-200 dark:border-yellow-800">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{stats.pendingPayments}</p>
+                <p className="text-sm text-yellow-600/70 dark:text-yellow-400/70">Pending Payments</p>
               </div>
-            ))
-          )}
-        </div>
+              <Clock className="h-8 w-8 text-yellow-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 border-emerald-200 dark:border-emerald-800">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.completedPayments}</p>
+                <p className="text-sm text-emerald-600/70 dark:text-emerald-400/70">Completed Payments</p>
+              </div>
+              <CheckCircle className="h-8 w-8 text-emerald-500" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    </>
+
+      {/* Payments Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Payment History
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {payments.length === 0 ? (
+            <div className="text-center py-8">
+              <DollarSign className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-muted-foreground">No payments found.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {payments.map((payment) => (
+                <Card key={payment.id} className="hover:shadow-lg transition-shadow border-l-4 border-l-green-500">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        {getPaymentStatusIcon(payment.status)}
+                        <div>
+                          <h3 className="font-semibold text-foreground">{payment.payment_type.replace('_', ' ')}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(payment.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-green-600">KES {payment.amount.toLocaleString()}</p>
+                        <Badge className={getStatusColor(payment.status)}>
+                          {payment.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Orders Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShoppingCart className="h-5 w-5" />
+            Order History
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {orders.length === 0 ? (
+            <div className="text-center py-8">
+              <ShoppingCart className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-muted-foreground">No orders found.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {orders.map((order) => (
+                <Card key={order.id} className="hover:shadow-lg transition-shadow border-l-4 border-l-blue-500">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        {getOrderStatusIcon(order.status)}
+                        <div>
+                          <h3 className="font-semibold text-foreground">Order #{order.id.slice(-8)}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {order.order_items && order.order_items.length > 0 ? (
+                              order.order_items.map((item, index) => (
+                                <span key={index}>
+                                  {item.products?.name || "Unknown Product"} ({item.quantity}kg)
+                                  {index < order.order_items.length - 1 ? ", " : ""}
+                                </span>
+                              ))
+                            ) : (
+                              "No product details"
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(order.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-blue-600">KES {order.total_amount.toLocaleString()}</p>
+                        <Badge className={getStatusColor(order.status)}>
+                          {order.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

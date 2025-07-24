@@ -7,11 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/StatCard";
 import { MpesaPaymentModal } from "@/components/MpesaPaymentModal";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Plus, TrendingUp, Package, Clock, ShoppingCart, Leaf } from "lucide-react";
+import { Plus, TrendingUp, Package, Clock, ShoppingCart, Leaf, DollarSign, CheckCircle, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { FarmerSidebar } from "@/components/FarmerSidebar";
-import { WasteReportForm } from "@/components/WasteReportForm"; // Create this as a form-only component
+import { WasteReportForm } from "@/components/WasteReportForm";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface FarmerStats {
@@ -154,12 +154,12 @@ export default function FarmerDashboard() {
     setShowPaymentModal(true);
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'reported': return 'bg-blue-100 text-blue-800';
-      case 'scheduled': return 'bg-yellow-100 text-yellow-800';
-      case 'collected': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'reported': return <AlertCircle className="h-4 w-4 text-blue-500" />;
+      case 'scheduled': return <Clock className="h-4 w-4 text-yellow-500" />;
+      case 'collected': return <CheckCircle className="h-4 w-4 text-green-500" />;
+      default: return <Package className="h-4 w-4 text-gray-500" />;
     }
   };
 
@@ -175,145 +175,180 @@ export default function FarmerDashboard() {
 
   return (
     <>
-      {/* Header */}
-      <div className="flex justify-between items-center">
+      {/* Modern Header */}
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Welcome, {profile?.full_name}</h1>
-          <p className="text-muted-foreground">Farmer Dashboard</p>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+            Welcome back, {profile?.full_name}
+          </h1>
+          <p className="text-muted-foreground mt-2">Here's what's happening with your farm today</p>
         </div>
-        <Button onClick={() => setIsReportModalOpen(true)}>
+        <Button 
+          onClick={() => setIsReportModalOpen(true)}
+          className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Report Waste
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <StatCard
-          title="Total Reports"
-          value={stats.totalReports}
-          icon={Package}
-          description="All waste reports"
-        />
-        <StatCard
-          title="Pending Pickup"
-          value={stats.pendingReports}
-          icon={Clock}
-          description="Awaiting collection"
-        />
-        <StatCard
-          title="Total Earnings"
-          value={`KES ${stats.totalEarnings.toLocaleString()}`}
-          icon={TrendingUp}
-          description="From waste sales"
-        />
-        <StatCard
-          title="Product Orders"
-          value={stats.totalOrders}
-          icon={ShoppingCart}
-          description="Orders placed"
-        />
-        <StatCard
-          title="Total Spent"
-          value={`KES ${stats.totalSpent.toLocaleString()}`}
-          icon={Package}
-          description="On products"
-        />
+      {/* Modern Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-800">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.totalReports}</p>
+                <p className="text-sm text-blue-600/70 dark:text-blue-400/70">Total Reports</p>
+              </div>
+              <Package className="h-8 w-8 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 border-yellow-200 dark:border-yellow-800">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{stats.pendingReports}</p>
+                <p className="text-sm text-yellow-600/70 dark:text-yellow-400/70">Pending Pickup</p>
+              </div>
+              <Clock className="h-8 w-8 text-yellow-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-800">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">KES {stats.totalEarnings.toLocaleString()}</p>
+                <p className="text-sm text-green-600/70 dark:text-green-400/70">Total Earnings</p>
+              </div>
+              <DollarSign className="h-8 w-8 text-green-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-800">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.totalOrders}</p>
+                <p className="text-sm text-purple-600/70 dark:text-purple-400/70">Product Orders</p>
+              </div>
+              <ShoppingCart className="h-8 w-8 text-purple-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border-orange-200 dark:border-orange-800">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">KES {stats.totalSpent.toLocaleString()}</p>
+                <p className="text-sm text-orange-600/70 dark:text-orange-400/70">Total Spent</p>
+              </div>
+              <TrendingUp className="h-8 w-8 text-orange-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 border-emerald-200 dark:border-emerald-800">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.completedReports}</p>
+                <p className="text-sm text-emerald-600/70 dark:text-emerald-400/70">Completed</p>
+              </div>
+              <CheckCircle className="h-8 w-8 text-emerald-500" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Available Products */}
-      <Card>
+      {/* Modern Product Section */}
+      <Card className="mb-8">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Leaf className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-2xl">
+            <Leaf className="h-6 w-6 text-green-600" />
             Buy Organic Products
           </CardTitle>
-          <CardDescription>Purchase processed manure and fertilizer pellets</CardDescription>
+          <CardDescription className="text-lg">Premium quality manure and fertilizer for your farm</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {products.map((product) => (
-              <div key={product.id} className="border rounded-lg p-4 space-y-3">
-                <div>
-                  <h3 className="font-medium">{product.name}</h3>
-                  <p className="text-sm text-muted-foreground">{product.description}</p>
-                </div>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-lg font-bold">KES {product.price_per_kg ? product.price_per_kg : 0}/kg</p>
-                    <p className="text-sm text-muted-foreground">
-                      {product.available_kg} kg available
-                    </p>
+              <Card key={product.id} className="hover:shadow-xl transition-all duration-300 border-2 hover:border-green-200 dark:hover:border-green-800">
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-xl font-semibold text-foreground">{product.name}</h3>
+                      <p className="text-muted-foreground mt-2">{product.description}</p>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-2xl font-bold text-green-600">KES {product.price_per_kg ? product.price_per_kg : 0}/kg</p>
+                        <p className="text-sm text-muted-foreground">
+                          {product.available_kg} kg available
+                        </p>
+                      </div>
+                      <Button 
+                        onClick={() => handleBuyProduct(product)}
+                        disabled={product.available_kg === 0}
+                        className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg"
+                      >
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                        Buy Now
+                      </Button>
+                    </div>
                   </div>
-                  <Button 
-                    onClick={() => handleBuyProduct(product)}
-                    disabled={product.available_kg === 0}
-                    className="flex items-center gap-2"
-                  >
-                    <ShoppingCart className="h-4 w-4" />
-                    Buy Now
-                  </Button>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* Recent Reports */}
+      {/* Modern Recent Reports */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Waste Reports</CardTitle>
-          <CardDescription>Your latest waste collection reports</CardDescription>
+          <CardTitle className="text-2xl">Recent Waste Reports</CardTitle>
+          <CardDescription>Your latest waste collection activities</CardDescription>
         </CardHeader>
         <CardContent>
           {recentReports.length > 0 ? (
             <div className="space-y-4">
               {recentReports.map((report) => (
-                <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex-1">
-                    <h3 className="font-medium">{report.waste_type.replace('_', ' ')}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {report.quantity_kg}kg • {report.location}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(report.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <Badge className={getStatusColor(report.status)}>
-                    {report.status}
-                  </Badge>
-                </div>
+                <Card key={report.id} className="hover:shadow-lg transition-shadow border-l-4 border-l-green-500">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        {getStatusIcon(report.status)}
+                        <div>
+                          <h3 className="font-semibold text-foreground capitalize">{report.waste_type.replace('_', ' ')}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {report.quantity_kg}kg • {report.location}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(report.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300">
+                        {report.status}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           ) : (
-            <p className="text-muted-foreground text-center py-4">
-              No waste reports yet. Start by reporting your first waste!
-            </p>
+            <div className="text-center py-8">
+              <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-muted-foreground">No waste reports yet. Start by reporting your first waste!</p>
+            </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" onClick={() => navigate('/farmer/waste-reports')}>
-              <Plus className="h-4 w-4 mr-2" />
-              Report New Waste
-            </Button>
-            <Button variant="outline" onClick={() => navigate('/farmer/waste-reports')}>
-              <Clock className="h-4 w-4 mr-2" />
-              Check Status
-            </Button>
-            <Button variant="outline" onClick={() => navigate('/farmer/payments')}>
-              <TrendingUp className="h-4 w-4 mr-2" />
-              View Payments
-            </Button>
-          </div>
         </CardContent>
       </Card>
 
@@ -336,7 +371,7 @@ export default function FarmerDashboard() {
 
       {/* Waste Report Modal */}
       <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <WasteReportForm onSuccess={() => setIsReportModalOpen(false)} />
         </DialogContent>
       </Dialog>
@@ -358,18 +393,38 @@ export function TicketList() {
   }, [profile]);
 
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-2">My Tickets</h2>
-      {tickets.length === 0 ? <div>No tickets found.</div> : (
-        tickets.map(ticket => (
-          <div key={ticket.id} className="mb-2 p-2 border rounded">
-            <div><b>Subject:</b> {ticket.subject}</div>
-            <div><b>Status:</b> {ticket.status}</div>
-            <div><b>Message:</b> {ticket.message}</div>
-            <div><b>Date:</b> {new Date(ticket.created_at).toLocaleString()}</div>
+    <Card className="mt-8">
+      <CardHeader>
+        <CardTitle className="text-2xl">My Support Tickets</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {tickets.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>No tickets found.</p>
           </div>
-        ))
-      )}
-    </div>
+        ) : (
+          <div className="space-y-4">
+            {tickets.map(ticket => (
+              <Card key={ticket.id} className="border-l-4 border-l-blue-500">
+                <CardContent className="p-4">
+                  <div className="space-y-2">
+                    <div className="text-foreground font-medium">{ticket.subject}</div>
+                    <div className="text-foreground">{ticket.message}</div>
+                    <div className="flex justify-between items-center">
+                      <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
+                        {ticket.status}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(ticket.created_at).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

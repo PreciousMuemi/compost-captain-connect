@@ -94,9 +94,7 @@ export const FarmerSidebar = ({ children }: SidebarProps) => {
           {/* Header */}
           <div className="flex items-center justify-center p-6 border-b border-gray-200">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
-                <Leaf className="w-5 h-5 text-white" />
-              </div>
+              <img src="/logo.png" alt="Captain Compost Logo" className="w-10 h-10" />
               <div>
                 <h1 className="text-lg font-bold text-green-800">Captain Compost</h1>
                 <p className="text-sm text-gray-600">Farmer Portal</p>
@@ -179,13 +177,9 @@ export const FarmerSidebar = ({ children }: SidebarProps) => {
       )}
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile header spacer */}
-        <div className="h-16 md:hidden"></div>
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
-      </div>
+      <main className="flex-1 h-screen overflow-y-scroll bg-background pt-16">
+        {children}
+      </main>
     </div>
   );
 };

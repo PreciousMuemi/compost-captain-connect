@@ -46,29 +46,29 @@ export default function AdminWasteReports() {
   };
 
   const handleVerify = async (reportId: string) => {
-    await supabase.from("waste_reports").update({ admin_verified: true, status: "approved" }).eq("id", reportId);
+    await supabase.from("waste_reports").update({ admin_verified: true, status: "scheduled" }).eq("id", reportId);
     // Fetch the report to get farmer_id
     const { data: report } = await supabase.from("waste_reports").select("farmer_id").eq("id", reportId).single();
-    // Send notification
-    await supabase.from("notifications").insert({
-      profile_id: report.farmer_id, // <-- use the actual column name
-      type: "approval",
-      message: "Your waste report has been approved. A rider will reach out soon.",
-      related_id: reportId
+      // Send notification
+      await supabase.from("notifications").insert({
+      recipient_id: report.farmer_id,
+        type: "approval",
+        message: "Your waste report has been approved. A rider will reach out soon.",
+      related_entity_id: reportId
     });
     fetchData();
   };
 
   const handleAssignRider = async (reportId: string, riderId: string) => {
-    await supabase.from("waste_reports").update({ rider_id: riderId, status: "assigned" }).eq("id", reportId);
+    await supabase.from("waste_reports").update({ rider_id: riderId, status: "scheduled" }).eq("id", reportId);
     // Fetch the report to get farmer_id
     const { data: report } = await supabase.from("waste_reports").select("farmer_id").eq("id", reportId).single();
-    // Send notification
-    await supabase.from("notifications").insert({
-      profile_id: report.farmer_id, // <-- use the actual column name
-      type: "rider_assigned",
-      message: "A rider has been assigned to your pickup.",
-      related_id: reportId
+      // Send notification
+      await supabase.from("notifications").insert({
+      recipient_id: report.farmer_id,
+        type: "rider_assigned",
+        message: "A rider has been assigned to your pickup.",
+      related_entity_id: reportId
     });
     fetchData();
   };
@@ -138,4 +138,4 @@ export default function AdminWasteReports() {
       </Card>
     </div>
   );
-}
+  }

@@ -36,13 +36,23 @@ function NotificationFeed({ userId }: NotificationFeedProps) {
 
   const fetchNotifications = async () => {
     setLoading(true);
-    const { data: notificationsData } = await supabase
-      .from("notifications")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false });
-    setNotifications(notificationsData || []);
-    setLoading(false);
+    try {
+      const { data: notificationsData, error } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("recipient_id", userId)
+        .order("created_at", { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching notifications:', error);
+      }
+      
+      setNotifications(notificationsData || []);
+    } catch (error) {
+      console.error('Error in fetchNotifications:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) return <div className="p-6">Loading notifications...</div>;

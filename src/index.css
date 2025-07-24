@@ -16,81 +16,46 @@ html, body, #root {
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
-
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-
     --primary: 160 84% 39%;
     --primary-foreground: 0 0% 100%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 45 93% 47%;
-    --accent-foreground: 0 0% 100%;
-
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 160 84% 39%;
-
     --radius: 0.5rem;
-
-    --sidebar-background: 160 84% 39%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 45 93% 47%;
-    --sidebar-primary-foreground: 160 84% 39%;
-    --sidebar-accent: 160 70% 45%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 160 30% 85%;
-    --sidebar-ring: 160 84% 39%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
+    --popover: 224 71% 4%;
+    --popover-foreground: 213 31% 91%;
     --primary: 160 84% 39%;
     --primary-foreground: 0 0% 100%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 45 93% 47%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --secondary: 222 84% 5%;
+    --secondary-foreground: 213 31% 91%;
+    --muted: 222 84% 5%;
+    --muted-foreground: 217 19% 35%;
+    --accent: 222 84% 5%;
+    --accent-foreground: 213 31% 91%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 213 31% 91%;
+    --border: 216 34% 17%;
+    --input: 216 34% 17%;
     --ring: 160 84% 39%;
-    
-    --sidebar-background: 160 84% 35%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 45 93% 47%;
-    --sidebar-primary-foreground: 160 84% 39%;
-    --sidebar-accent: 160 70% 25%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 160 30% 25%;
-    --sidebar-ring: 160 84% 39%;
   }
 }
 
@@ -98,16 +63,120 @@ html, body, #root {
   * {
     @apply border-border;
   }
-
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground;
+  }
+  
+  /* Modern dark mode text fixes */
+  .dark .text-gray-600 {
+    @apply text-gray-300;
+  }
+  
+  .dark .text-gray-500 {
+    @apply text-gray-400;
+  }
+  
+  .dark .text-gray-700 {
+    @apply text-gray-200;
+  }
+  
+  .dark .text-gray-800 {
+    @apply text-gray-100;
+  }
+  
+  .dark .text-gray-900 {
+    @apply text-white;
+  }
+  
+  /* Modern dark mode background fixes */
+  .dark .bg-white {
+    @apply bg-slate-800;
+  }
+  
+  .dark .bg-gray-50 {
+    @apply bg-slate-900;
+  }
+  
+  .dark .bg-gray-100 {
+    @apply bg-slate-800;
+  }
+  
+  .dark .bg-gray-200 {
+    @apply bg-slate-700;
+  }
+  
+  /* Modern dark mode border fixes */
+  .dark .border-gray-200 {
+    @apply border-slate-700;
+  }
+  
+  .dark .border-gray-100 {
+    @apply border-slate-700;
+  }
+  
+  .dark .border-gray-300 {
+    @apply border-slate-600;
+  }
+  
+  /* Modern dark mode card fixes */
+  .dark .bg-card {
+    @apply bg-slate-800;
+  }
+  
+  /* Ensure main content area has proper dark background */
+  .dark main {
+    @apply bg-slate-900;
+  }
+  
+  /* Modern glassmorphism in dark mode */
+  .dark .glassmorphism {
+    background: rgba(30, 41, 59, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+  
+  /* Modern sidebar styling */
+  .dark .bg-green-600 {
+    @apply bg-emerald-600;
+  }
+  
+  .dark .bg-green-500 {
+    @apply bg-emerald-500;
+  }
+  
+  /* Modern card hover effects */
+  .dark .hover\:shadow-lg:hover {
+    @apply shadow-2xl shadow-black/20;
+  }
+  
+  /* Modern button styling */
+  .dark .bg-green-600 {
+    @apply bg-emerald-600 hover:bg-emerald-700;
+  }
+  
+  /* Modern badge styling */
+  .dark .bg-blue-100 {
+    @apply bg-blue-900/20 text-blue-300;
+  }
+  
+  .dark .bg-yellow-100 {
+    @apply bg-yellow-900/20 text-yellow-300;
+  }
+  
+  .dark .bg-green-100 {
+    @apply bg-green-900/20 text-green-300;
+  }
+  
+  .dark .bg-gray-100 {
+    @apply bg-slate-800 text-slate-200;
   }
 }
 
-.glass {
-  background: rgba(255,255,255,0.2);
-  box-shadow: 0 4px 30px rgba(0,0,0,0.1);
-  backdrop-filter: blur(8px);
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.3);
+/* Modern glassmorphism effect */
+.glassmorphism {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
 }

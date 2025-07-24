@@ -118,11 +118,6 @@ const Auth = () => {
       </div>
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
-              <Leaf className="w-6 h-6 text-white" />
-            </div>
-          </div>
           <CardTitle className="text-2xl font-bold text-green-800">Captain Compost</CardTitle>
           <CardDescription>
             AI-Powered Waste-to-Manure Management System
