@@ -140,153 +140,212 @@ export default function Farmers() {
   const totalWaste = farmers.reduce((sum, f) => sum + f.totalWasteSubmitted, 0);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Farmers</h1>
-          <p className="text-gray-600 mt-1">Manage farmer profiles and track their contributions.</p>
-        </div>
-        <Button className="bg-primary hover:bg-primary/90" onClick={() => setShowAddModal(true)}>
-          <UserPlus className="h-4 w-4 mr-2" />
-          Add New Farmer
-        </Button>
-      </div>
-      {showAddModal && <AddFarmerModal onClose={() => setShowAddModal(false)} onAdd={fetchFarmers} />}
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-white shadow-sm border border-gray-200">
-          <CardContent className="p-6">
-            <div className="text-2xl font-bold text-gray-900">{totalFarmers}</div>
-            <p className="text-sm text-gray-600">Total Farmers</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-white shadow-sm border border-gray-200">
-          <CardContent className="p-6">
-            <div className="text-2xl font-bold text-green-600">{activeFarmers}</div>
-            <p className="text-sm text-gray-600">Active Farmers</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-white shadow-sm border border-gray-200">
-          <CardContent className="p-6">
-            <div className="text-2xl font-bold text-primary">{formatCurrency(totalEarnings)}</div>
-            <p className="text-sm text-gray-600">Total Paid</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-white shadow-sm border border-gray-200">
-          <CardContent className="p-6">
-            <div className="text-2xl font-bold text-accent">{totalWaste.toLocaleString()} kg</div>
-            <p className="text-sm text-gray-600">Total Waste</p>
-          </CardContent>
-        </Card>
-      </div>
-      {/* Filters */}
-      <Card className="bg-white shadow-sm border border-gray-200">
-        <CardContent className="p-6">
-          <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex-1">
-              <Input
-                placeholder="Search by name, phone, or location..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full"
-              />
+    <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+      {/* Header Section */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <div className="px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Farmers</h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">Manage farmer profiles and track their contributions.</p>
             </div>
-            <div className="flex gap-2">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Select value={regionFilter} onValueChange={setRegionFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Region" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Regions</SelectItem>
-                  {regions.filter(region => region).map(region => (
-                    <SelectItem key={region} value={region}>{region}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Button 
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors duration-200 font-medium" 
+              onClick={() => setShowAddModal(true)}
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Add New Farmer
+            </Button>
           </div>
-        </CardContent>
-      </Card>
-      {/* Farmers Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredFarmers.map((farmer) => (
-          <Card key={farmer.id} className="bg-white shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <CardHeader className="pb-3">
+        </div>
+      </div>
+
+      {showAddModal && <AddFarmerModal onClose={() => setShowAddModal(false)} onAdd={fetchFarmers} />}
+
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto p-6 space-y-6">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="bg-white dark:bg-gray-800 shadow-lg border-0">
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-semibold text-gray-900">
-                  {farmer.name}
-                </CardTitle>
-                <Badge variant={farmer.isActive ? "default" : "secondary"}>
-                  {farmer.isActive ? "Active" : "Inactive"}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center text-sm text-gray-600">
-                  <Phone className="h-4 w-4 mr-2" />
-                  <span>{farmer.phoneNumber}</span>
+                <div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">{totalFarmers}</div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Farmers</p>
                 </div>
-                
-                <div className="flex items-center text-sm text-gray-600">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  <span>{farmer.location}</span>
+                <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                  <UserPlus className="h-6 w-6 text-blue-600" />
                 </div>
-                
-                <div className="flex items-center text-sm text-gray-600">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  <span>Joined {formatDate(farmer.joinedDate)}</span>
-                </div>
-              </div>
-              <div className="border-t pt-3 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Total Earnings</span>
-                  <span className="font-semibold text-primary">
-                    {formatCurrency(farmer.totalEarnings)}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Waste Submitted</span>
-                  <span className="font-semibold text-accent">
-                    {farmer.totalWasteSubmitted} kg
-                  </span>
-                </div>
-              </div>
-              <div className="flex gap-2 pt-2">
-                <Button size="sm" className="flex-1" onClick={() => navigate(`/farmers/${farmer.id}/profile`)}>
-                  <Eye className="h-4 w-4 mr-2" />
-                  View Profile
-                </Button>
-                <Button size="sm" variant="outline" className="flex-1" onClick={() => navigate(`/farmers/${farmer.id}/history`)}>
-                  <TrendingUp className="h-4 w-4 mr-2" />
-                  History
-                </Button>
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
-      {filteredFarmers.length === 0 && (
-        <Card className="bg-white shadow-sm border border-gray-200">
-          <CardContent className="p-12 text-center">
-            <UserPlus className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No farmers found</h3>
-            <p className="text-gray-600">Try adjusting your search criteria or filters.</p>
+          <Card className="bg-white dark:bg-gray-800 shadow-lg border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-2xl font-bold text-green-600">{activeFarmers}</div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Active Farmers</p>
+                </div>
+                <div className="h-12 w-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white dark:bg-gray-800 shadow-lg border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-2xl font-bold text-purple-600">{formatCurrency(totalEarnings)}</div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Paid</p>
+                </div>
+                <div className="h-12 w-12 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-purple-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white dark:bg-gray-800 shadow-lg border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-2xl font-bold text-orange-600">{totalWaste.toLocaleString()} kg</div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Waste</p>
+                </div>
+                <div className="h-12 w-12 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-orange-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Filters */}
+        <Card className="bg-white dark:bg-gray-800 shadow-lg border-0">
+          <CardHeader className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 border-b border-gray-200 dark:border-gray-700">
+            <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">Search & Filter</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="flex-1">
+                <Input
+                  placeholder="Search by name, phone, or location..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full border-2 border-gray-200 dark:border-gray-700 focus:border-green-500 dark:focus:border-green-500"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-40 border-2 border-gray-200 dark:border-gray-700">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Select value={regionFilter} onValueChange={setRegionFilter}>
+                  <SelectTrigger className="w-40 border-2 border-gray-200 dark:border-gray-700">
+                    <SelectValue placeholder="Region" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Regions</SelectItem>
+                    {regions.filter(region => region).map(region => (
+                      <SelectItem key={region} value={region}>{region}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardContent>
         </Card>
-      )}
+
+        {/* Farmers Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filteredFarmers.map((farmer) => (
+            <Card key={farmer.id} className="bg-white dark:bg-gray-800 shadow-lg border-0 hover:shadow-xl transition-all duration-200 hover:scale-105">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {farmer.name}
+                  </CardTitle>
+                  <Badge 
+                    variant={farmer.isActive ? "default" : "secondary"}
+                    className={farmer.isActive ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300" : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"}
+                  >
+                    {farmer.isActive ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                    <Phone className="h-4 w-4 mr-3 text-blue-600" />
+                    <span>{farmer.phoneNumber}</span>
+                  </div>
+                  
+                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                    <MapPin className="h-4 w-4 mr-3 text-green-600" />
+                    <span>{farmer.location}</span>
+                  </div>
+                  
+                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                    <Calendar className="h-4 w-4 mr-3 text-purple-600" />
+                    <span>Joined {formatDate(farmer.joinedDate)}</span>
+                  </div>
+                </div>
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-3 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Total Earnings</span>
+                    <span className="font-semibold text-green-600">
+                      {formatCurrency(farmer.totalEarnings)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Waste Submitted</span>
+                    <span className="font-semibold text-blue-600">
+                      {farmer.totalWasteSubmitted} kg
+                    </span>
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Button 
+                    size="sm" 
+                    className="flex-1 bg-blue-600 hover:bg-blue-700" 
+                    onClick={() => navigate(`/farmers/${farmer.id}/profile`)}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Profile
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex-1 border-2 border-gray-200 dark:border-gray-700 hover:border-green-500 dark:hover:border-green-500" 
+                    onClick={() => navigate(`/farmers/${farmer.id}/history`)}
+                  >
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    History
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {filteredFarmers.length === 0 && (
+          <Card className="bg-white dark:bg-gray-800 shadow-lg border-0">
+            <CardContent className="p-12 text-center">
+              <UserPlus className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No farmers found</h3>
+              <p className="text-gray-600 dark:text-gray-400">Try adjusting your search criteria or filters.</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

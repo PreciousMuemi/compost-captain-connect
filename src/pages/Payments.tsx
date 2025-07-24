@@ -9,7 +9,7 @@ import { DollarSign, Plus, Calendar, User, CreditCard, CheckCircle, Clock, X, Sm
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
-import { MpesaPaymentModal } from "@/components/MpesaPaymentModal";
+import { AdminPaymentModal } from "@/components/AdminPaymentModal";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -47,8 +47,8 @@ export default function Payments() {
   const [farmers, setFarmers] = useState<Tables<'profiles'>[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [isMpesaModalOpen, setIsMpesaModalOpen] = useState(false);
-  const [selectedFarmer, setSelectedFarmer] = useState<{ id: string; name: string } | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [selectedFarmer, setSelectedFarmer] = useState<{ id: string; name: string; phone_number: string } | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -102,9 +102,9 @@ export default function Payments() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleMpesaPayment = (farmerId: string, farmerName: string) => {
-    setSelectedFarmer({ id: farmerId, name: farmerName });
-    setIsMpesaModalOpen(true);
+  const handleMpesaPayment = (farmerId: string, farmerName: string, phoneNumber: string) => {
+    setSelectedFarmer({ id: farmerId, name: farmerName, phone_number: phoneNumber });
+    setIsPaymentModalOpen(true);
   };
 
   const updatePaymentStatus = async (paymentId: string, newStatus: string) => {
@@ -143,192 +143,218 @@ export default function Payments() {
   const pendingCount = payments.filter(p => p.status === 'pending').length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Payments</h1>
-          <p className="text-gray-600 mt-1">Manage farmer payments and track transaction history.</p>
-        </div>
-        
-        <Select value="" onValueChange={(farmerId) => {
-          const farmer = farmers.find(f => f.id === farmerId);
-          if (farmer) handleMpesaPayment(farmer.id, farmer.full_name);
-        }}>
-          <SelectTrigger className="bg-primary hover:bg-primary/90 text-primary-foreground border-primary">
-            <Smartphone className="h-4 w-4 mr-2" />
-            <SelectValue placeholder="Send M-Pesa Payment" />
-          </SelectTrigger>
-          <SelectContent>
-            {farmers.map(farmer => (
-              <SelectItem key={farmer.id} value={farmer.id}>
-                {farmer.full_name} - {farmer.phone_number}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-white shadow-sm border border-gray-200">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-2xl font-bold text-gray-900">{formatCurrency(totalPaid)}</div>
-                <p className="text-sm text-gray-600">Total Paid</p>
-              </div>
-              <CheckCircle className="h-8 w-8 text-green-500" />
+    <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+      {/* Header Section */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <div className="px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Payments</h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">Manage farmer payments and track transaction history.</p>
             </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-white shadow-sm border border-gray-200">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-2xl font-bold text-yellow-600">{formatCurrency(pendingAmount)}</div>
-                <p className="text-sm text-gray-600">Pending</p>
-              </div>
-              <Clock className="h-8 w-8 text-yellow-500" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-white shadow-sm border border-gray-200">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-2xl font-bold text-green-600">{completedCount}</div>
-                <p className="text-sm text-gray-600">Completed</p>
-              </div>
-              <DollarSign className="h-8 w-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-white shadow-sm border border-gray-200">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-2xl font-bold text-gray-600">{pendingCount}</div>
-                <p className="text-sm text-gray-600">Pending Count</p>
-              </div>
-              <Clock className="h-8 w-8 text-gray-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <Card className="bg-white shadow-sm border border-gray-200">
-        <CardContent className="p-6">
-          <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex-1">
-              <Input
-                placeholder="Search by farmer name or transaction ID..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="failed">Failed</SelectItem>
-                </SelectContent>
-              </Select>
-              
-            </div>
+            
+            <Select value="" onValueChange={(farmerId) => {
+              const farmer = farmers.find(f => f.id === farmerId);
+              if (farmer) handleMpesaPayment(farmer.id, farmer.full_name, farmer.phone_number);
+            }}>
+              <SelectTrigger className="bg-green-600 hover:bg-green-700 text-white border-green-600 px-6 py-2 rounded-lg transition-colors duration-200 font-medium">
+                <Smartphone className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Send M-Pesa Payment" />
+              </SelectTrigger>
+              <SelectContent>
+                {farmers.map(farmer => (
+                  <SelectItem key={farmer.id} value={farmer.id}>
+                    {farmer.full_name} - {farmer.phone_number}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Payments List */}
-      <div className="space-y-4">
-        {filteredPayments.map((payment) => (
-          <Card key={payment.id} className="bg-white shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto p-6 space-y-6">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="bg-white dark:bg-gray-800 shadow-lg border-0">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                  <div className="text-2xl">📱</div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-gray-900">{payment.farmer?.full_name || 'Unknown'}</h3>
-                      <Badge className={getStatusColor(payment.status || 'pending')}>
-                        {payment.status}
-                      </Badge>
+                <div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalPaid)}</div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Paid</p>
+                </div>
+                <div className="h-12 w-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-white dark:bg-gray-800 shadow-lg border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-2xl font-bold text-yellow-600">{formatCurrency(pendingAmount)}</div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Pending</p>
+                </div>
+                <div className="h-12 w-12 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-yellow-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-white dark:bg-gray-800 shadow-lg border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-2xl font-bold text-green-600">{completedCount}</div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Completed</p>
+                </div>
+                <div className="h-12 w-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
+                  <DollarSign className="h-6 w-6 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-white dark:bg-gray-800 shadow-lg border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-2xl font-bold text-gray-600 dark:text-gray-400">{pendingCount}</div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Pending Count</p>
+                </div>
+                <div className="h-12 w-12 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-gray-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Filters */}
+        <Card className="bg-white dark:bg-gray-800 shadow-lg border-0">
+          <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-b border-gray-200 dark:border-gray-700">
+            <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">Search & Filter</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="flex-1">
+                <Input
+                  placeholder="Search by farmer name or transaction ID..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full border-2 border-gray-200 dark:border-gray-700 focus:border-green-500 dark:focus:border-green-500"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-40 border-2 border-gray-200 dark:border-gray-700">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Payments List */}
+        <div className="space-y-4">
+          {filteredPayments.map((payment) => (
+            <Card key={payment.id} className="bg-white dark:bg-gray-800 shadow-lg border-0 hover:shadow-xl transition-all duration-200">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                      <Smartphone className="h-6 w-6 text-blue-600" />
                     </div>
-                    <div className="flex items-center text-sm text-gray-600 mt-1 gap-4">
-                      <span className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-1" />
-                        {formatDate(payment.created_at || '')}
-                      </span>
-                      <span className="flex items-center">
-                        <CreditCard className="h-4 w-4 mr-1" />
-                        {payment.payment_type.replace('_', ' ')}
-                      </span>
-                      {payment.mpesa_transaction_id && (
-                        <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
-                          {payment.mpesa_transaction_id}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-gray-900 dark:text-white">{payment.farmer?.full_name || 'Unknown'}</h3>
+                        <Badge className={`${getStatusColor(payment.status || 'pending')} dark:bg-opacity-20`}>
+                          {payment.status}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mt-1 gap-4">
+                        <span className="flex items-center">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          {formatDate(payment.created_at || '')}
                         </span>
+                        <span className="flex items-center">
+                          <CreditCard className="h-4 w-4 mr-1" />
+                          {payment.payment_type.replace('_', ' ')}
+                        </span>
+                        {payment.mpesa_transaction_id && (
+                          <span className="text-xs font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                            {payment.mpesa_transaction_id}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-green-600">
+                        {formatCurrency(payment.amount)}
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      {payment.status === 'pending' && (
+                        <>
+                          <Button 
+                            size="sm" 
+                            className="bg-green-600 hover:bg-green-700"
+                            onClick={() => updatePaymentStatus(payment.id, 'completed')}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Complete
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="destructive"
+                            onClick={() => updatePaymentStatus(payment.id, 'failed')}
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            Fail
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>
                 </div>
-                
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-primary">
-                      {formatCurrency(payment.amount)}
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    {payment.status === 'pending' && (
-                      <>
-                        <Button 
-                          size="sm" 
-                          onClick={() => updatePaymentStatus(payment.id, 'completed')}
-                        >
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          Complete
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="destructive"
-                          onClick={() => updatePaymentStatus(payment.id, 'failed')}
-                        >
-                          <X className="h-4 w-4 mr-1" />
-                          Fail
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {filteredPayments.length === 0 && (
+          <Card className="bg-white dark:bg-gray-800 shadow-lg border-0">
+            <CardContent className="p-12 text-center">
+              <DollarSign className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No payments found</h3>
+              <p className="text-gray-600 dark:text-gray-400">Try adjusting your search criteria or create a new payment.</p>
             </CardContent>
           </Card>
-        ))}
+        )}
       </div>
 
-      {filteredPayments.length === 0 && (
-        <Card className="bg-white shadow-sm border border-gray-200">
-          <CardContent className="p-12 text-center">
-            <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No payments found</h3>
-            <p className="text-gray-600">Try adjusting your search criteria or create a new payment.</p>
-          </CardContent>
-        </Card>
-      )}
-      
-      {/* Note: The old FarmerPaymentModal component needs to be replaced or updated */}
+      {/* Admin Payment Modal */}
+      <AdminPaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        farmer={selectedFarmer}
+        onSuccess={fetchPayments}
+      />
     </div>
   );
 }
