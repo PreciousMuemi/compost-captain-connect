@@ -110,42 +110,42 @@ function AppContent() {
 
   return (
     <>
-      <Routes>
-        <Route path="/auth" element={<Auth />} />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <DashboardSelector />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/farmer"
-          element={
-            <ProtectedRoute allowedRoles={["farmer"]}>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <DashboardSelector />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/farmer"
+              element={
+                <ProtectedRoute allowedRoles={["farmer"]}>
               <FarmerSidebar>
-                <FarmerDashboard />
+                  <FarmerDashboard />
               </FarmerSidebar>
-            </ProtectedRoute>
-          }
-        />
-        <Route
+                </ProtectedRoute>
+              }
+            />
+            <Route
           path="/waste-reports"
-          element={
-            <ProtectedRoute allowedRoles={["farmer"]}>
+              element={
+                <ProtectedRoute allowedRoles={["farmer"]}>
               <FarmerSidebar>
-                <WasteReports />
+                  <WasteReports />
               </FarmerSidebar>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/farmer/payments"
-          element={
-            <ProtectedRoute allowedRoles={["farmer"]}>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/farmer/payments"
+              element={
+                <ProtectedRoute allowedRoles={["farmer"]}>
               <FarmerSidebar>
-                <FarmerPayments />
+                  <FarmerPayments />
               </FarmerSidebar>
             </ProtectedRoute>
           }
@@ -167,117 +167,117 @@ function AppContent() {
               <FarmerSidebar>
                 <Profile />
               </FarmerSidebar>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute allowedRoles={["admin"]}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin-dashboard"
-          element={
-            <ProtectedRoute allowedRoles={["admin"]}>
-              <DashboardLayout>
-                <AdminDashboard />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/farmers"
-          element={
-            <ProtectedRoute allowedRoles={["admin"]}>
-              <DashboardLayout>
-                <Farmers />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/farmers/:id/profile"
-          element={<FarmerProfile />}
-        />
-        <Route
-          path="/farmers/:id/history"
-          element={<FarmerHistory />}
-        />
-        <Route
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin-dashboard"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <DashboardLayout>
+                    <AdminDashboard />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/farmers"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <DashboardLayout>
+                    <Farmers />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/farmers/:id/profile"
+              element={<FarmerProfile />}
+            />
+            <Route
+              path="/farmers/:id/history"
+              element={<FarmerHistory />}
+            />
+            <Route
           path="/admin/waste-reports"
-          element={
-            <ProtectedRoute allowedRoles={["admin"]}>
-              <DashboardLayout>
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <DashboardLayout>
                 <AdminWasteReports />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/payments"
-          element={
-            <ProtectedRoute allowedRoles={["admin"]}>
-              <DashboardLayout>
-                <Payments />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/analytics"
-          element={
-            <ProtectedRoute allowedRoles={["admin"]}>
-              <DashboardLayout>
-                <Analytics />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dispatch-dashboard"
-          element={
-            <ProtectedRoute allowedRoles={['dispatch']}>
-              <DashboardLayout>
-                <DispatchDashboard />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/riders"
-          element={
-            <ProtectedRoute allowedRoles={['dispatch']}>
-              <DashboardLayout>
-                <Riders />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/inventory"
-          element={
-            <ProtectedRoute allowedRoles={['dispatch']}>
-              <DashboardLayout>
-                <Inventory />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/notifications"
-          element={
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/payments"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <DashboardLayout>
+                    <Payments />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <DashboardLayout>
+                    <Analytics />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dispatch-dashboard"
+              element={
+                <ProtectedRoute allowedRoles={['dispatch']}>
+                  <DashboardLayout>
+                    <DispatchDashboard />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/riders"
+              element={
+                <ProtectedRoute allowedRoles={['dispatch']}>
+                  <DashboardLayout>
+                    <Riders />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/inventory"
+              element={
+                <ProtectedRoute allowedRoles={['dispatch']}>
+                  <DashboardLayout>
+                    <Inventory />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notifications"
+              element={
             <ProtectedRoute allowedRoles={['farmer', 'admin', 'dispatch']}>
               {profile?.role === 'farmer' ? (
                 <FarmerSidebar>
                   <Notifications />
                 </FarmerSidebar>
               ) : (
-                <DashboardLayout>
-                  <Notifications />
-                </DashboardLayout>
+                  <DashboardLayout>
+                    <Notifications />
+                  </DashboardLayout>
               )}
             </ProtectedRoute>
           }
@@ -289,43 +289,43 @@ function AppContent() {
               <FarmerSidebar>
                 <EnhancedTicketSystem />
               </FarmerSidebar>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dispatch-map"
-          element={
-            <ProtectedRoute allowedRoles={['dispatch']}>
-              <DashboardLayout>
-                <DispatchMapPage />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dispatch-map"
+              element={
+                <ProtectedRoute allowedRoles={['dispatch']}>
+                  <DashboardLayout>
+                    <DispatchMapPage />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
             <ProtectedRoute allowedRoles={['dispatch', 'admin']}>
-              <DashboardLayout>
-                <Settings />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/my-reports"
-          element={
-            <ProtectedRoute allowedRoles={["farmer"]}>
-              <MyReports />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/buy-products"
-          element={
-            <ProtectedRoute allowedRoles={["farmer"]}>
+                  <DashboardLayout>
+                    <Settings />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-reports"
+              element={
+                <ProtectedRoute allowedRoles={["farmer"]}>
+                  <MyReports />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/buy-products"
+              element={
+                <ProtectedRoute allowedRoles={["farmer"]}>
               <FarmerSidebar>
-                <ProductShop profile={profile} />
+                  <ProductShop profile={profile} />
               </FarmerSidebar>
             </ProtectedRoute>
           }
@@ -377,12 +377,12 @@ function AppContent() {
               <DashboardLayout>
                 <AdminSettings />
               </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-      <Toaster />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+          <Toaster />
       {showFloatingTicket && <FloatingTicketButton />}
       {showTopRightHeader && <TopRightHeader />}
     </>

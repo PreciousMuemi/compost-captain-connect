@@ -96,7 +96,7 @@ const AuthDebug = () => {
       const response = await fetch('https://qoplbnyngttwkiaovwyy.supabase.co/rest/v1/', {
         method: 'HEAD',
         headers: {
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvcGxibnluZ3R0d2tpYW92d3l5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1MzAzNTEsImV4cCI6MjA2ODEwNjM1MX0.91HBdKSMhLtdMfeO3pefdvSp5x1Rl3dkk1FDXD4TYik'
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || ''
         }
       });
       addLog(`Direct connection result: ${response.status} ${response.statusText}`);

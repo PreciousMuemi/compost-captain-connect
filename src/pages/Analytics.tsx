@@ -255,9 +255,9 @@ export default function Analytics() {
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">Payment Success Rate</div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </CardContent>
+      </Card>
       </div>
     </div>
   );

@@ -85,10 +85,20 @@ export default function AdminInventory() {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Inventory fetch error:', error);
+        // If table doesn't exist, just set empty array
+        if (error.code === '42P01') { // Table doesn't exist
+          setInventory([]);
+          return;
+        }
+        throw error;
+      }
       setInventory(data || []);
     } catch (error) {
       console.error('Error fetching inventory:', error);
+      // Set empty array on any error to prevent crashes
+      setInventory([]);
     } finally {
       setLoading(false);
     }

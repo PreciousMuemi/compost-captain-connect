@@ -15,25 +15,69 @@ import {
   Truck, 
   DollarSign,
   Search,
-  Filter
+  Filter,
+  X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TrackingTimeline } from "@/components/TrackingTimeline";
 
 function ReportStatusTimeline({ report }) {
   const stages = [
-    { label: "Reported", done: true },
-    { label: "Admin Verified", done: report.admin_verified },
-    { label: "Rider Assigned", done: !!report.rider_id },
-    { label: "Pickup Started", done: !!report.pickup_started_at },
-    { label: "Pickup Completed", done: !!report.pickup_completed_at },
-    { label: "Paid", done: report.paid },
+    { 
+      label: "Reported", 
+      done: true,
+      current: report.status === 'reported',
+      color: "bg-blue-500"
+    },
+    { 
+      label: "Admin Verified", 
+      done: report.admin_verified || report.status !== 'reported',
+      current: report.status === 'scheduled' && !report.rider_id,
+      color: "bg-green-500"
+    },
+    { 
+      label: "Rider Assigned", 
+      done: !!report.rider_id,
+      current: report.status === 'scheduled' && !!report.rider_id,
+      color: "bg-purple-500"
+    },
+    { 
+      label: "Collected", 
+      done: report.status === 'collected' || report.status === 'processed',
+      current: report.status === 'collected',
+      color: "bg-orange-500"
+    },
+    { 
+      label: "Processed", 
+      done: report.status === 'processed',
+      current: report.status === 'processed',
+      color: "bg-indigo-500"
+    },
+    { 
+      label: "Paid", 
+      done: report.status === 'processed',
+      current: report.status === 'processed',
+      color: "bg-green-600"
+    },
   ];
+  
   return (
-    <div className="flex gap-2 my-2">
-      {stages.map((s, i) => (
-        <div key={i} className={`px-2 py-1 rounded ${s.done ? "bg-green-500 text-white" : "bg-gray-200"}`}>
-          {s.label}
+    <div className="flex flex-wrap gap-2 my-3">
+      {stages.map((stage, i) => (
+        <div 
+          key={i} 
+          className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+            stage.current 
+              ? `${stage.color} text-white shadow-lg` 
+              : stage.done 
+                ? `${stage.color} text-white` 
+                : "bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
+          }`}
+        >
+          {stage.label}
+          {stage.current && (
+            <span className="ml-1 text-white">●</span>
+          )}
         </div>
       ))}
     </div>
@@ -49,9 +93,21 @@ export default function AdminWasteReports() {
   const [selectedReport, setSelectedReport] = useState<any>(null);
   const [showTracking, setShowTracking] = useState(false);
   const { toast } = useToast();
+  const [showNotification, setShowNotification] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState("");
+  const [showAssignRiderModal, setShowAssignRiderModal] = useState(false);
+  const [selectedReportForRider, setSelectedReportForRider] = useState<any>(null);
+  const [selectedRiderId, setSelectedRiderId] = useState("");
+
+  const showActionNotification = (message: string) => {
+    setNotificationMessage(message);
+    setShowNotification(true);
+    setTimeout(() => setShowNotification(false), 3000);
+  };
 
   useEffect(() => {
     fetchData();
+    checkDatabaseSchema(); // Check what columns exist
     
     // Set up real-time subscription
     const channel = supabase
@@ -64,7 +120,16 @@ export default function AdminWasteReports() {
         },
         (payload) => {
           console.log('Waste report update:', payload);
-          fetchData();
+          // Update the reports list immediately
+          if (payload.eventType === 'UPDATE') {
+            setReports(prev => prev.map(report => 
+              report.id === payload.new.id ? { ...report, ...payload.new } : report
+            ));
+          } else if (payload.eventType === 'INSERT') {
+            setReports(prev => [payload.new, ...prev]);
+          } else if (payload.eventType === 'DELETE') {
+            setReports(prev => prev.filter(report => report.id !== payload.old.id));
+          }
         }
       )
       .subscribe();
@@ -77,16 +142,38 @@ export default function AdminWasteReports() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const { data: reportsData } = await supabase
+      console.log('Fetching waste reports data...');
+      
+      const { data: reportsData, error: reportsError } = await supabase
         .from("waste_reports")
         .select("*, profiles:farmer_id(full_name, phone_number), riders(name, phone_number)")
         .order("created_at", { ascending: false });
+
+      if (reportsError) {
+        console.error('Error fetching reports:', reportsError);
+        throw reportsError;
+      }
+
+      console.log('Fetched reports:', reportsData?.length || 0);
       setReports(reportsData || []);
       
-      const { data: ridersData } = await supabase.from("riders").select("*");
-      setRiders(ridersData || []);
+      const { data: ridersData, error: ridersError } = await supabase
+        .from("riders")
+        .select("*");
+
+      if (ridersError) {
+        console.error('Error fetching riders:', ridersError);
+      } else {
+        console.log('Fetched riders:', ridersData?.length || 0);
+        setRiders(ridersData || []);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch waste reports data",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -94,34 +181,12 @@ export default function AdminWasteReports() {
 
   const handleVerify = async (reportId: string) => {
     try {
-      // First check if the report exists and get current data
-      const { data: existingReport, error: fetchError } = await supabase
-        .from("waste_reports")
-        .select("*")
-        .eq("id", reportId)
-        .single();
-
-      if (fetchError) {
-        console.error('Error fetching report:', fetchError);
-        throw new Error('Report not found');
-      }
-
-      // Update waste report status with only the fields that exist
-      const updateData: any = {
-        admin_verified: true,
-        status: "scheduled"
-      };
-
-      // Only add admin_verified_at if the column exists
-      try {
-        updateData.admin_verified_at = new Date().toISOString();
-      } catch (e) {
-        console.log('admin_verified_at column may not exist, skipping');
-      }
-
+      // Update waste report status - only update status field
       const { error: updateError } = await supabase
         .from("waste_reports")
-        .update(updateData)
+        .update({ 
+          status: "scheduled"
+        })
         .eq("id", reportId);
 
       if (updateError) {
@@ -140,7 +205,7 @@ export default function AdminWasteReports() {
         // Send real-time notification to farmer
         const { error: notificationError } = await supabase.from("notifications").insert({
           recipient_id: report.farmer_id,
-          type: "approval",
+        type: "approval",
           title: "Waste Report Approved",
           message: `Your waste report for ${report.quantity_kg}kg of ${report.waste_type.replace('_', ' ')} has been approved. A rider will be assigned soon.`,
           related_entity_id: reportId
@@ -155,6 +220,7 @@ export default function AdminWasteReports() {
           title: "Report Verified",
           description: "Farmer has been notified of approval",
         });
+        showActionNotification("Report verified! Farmer notified.");
       }
 
       fetchData();
@@ -170,6 +236,8 @@ export default function AdminWasteReports() {
 
   const handleAssignRider = async (reportId: string, riderId: string) => {
     try {
+      console.log('Assigning rider:', riderId, 'to report:', reportId);
+      
       // First check if the rider exists
       const { data: rider, error: riderError } = await supabase
         .from("riders")
@@ -182,21 +250,12 @@ export default function AdminWasteReports() {
       }
 
       // Update waste report with rider assignment
-      const updateData: any = {
-        rider_id: riderId,
-        status: "scheduled"
-      };
-
-      // Only add rider_assigned_at if the column exists
-      try {
-        updateData.rider_assigned_at = new Date().toISOString();
-      } catch (e) {
-        console.log('rider_assigned_at column may not exist, skipping');
-      }
-
       const { error: updateError } = await supabase
         .from("waste_reports")
-        .update(updateData)
+        .update({ 
+          rider_id: riderId,
+          status: "scheduled"
+        })
         .eq("id", reportId);
 
       if (updateError) {
@@ -215,7 +274,7 @@ export default function AdminWasteReports() {
         // Send real-time notification to farmer
         const { error: notificationError } = await supabase.from("notifications").insert({
           recipient_id: report.farmer_id,
-          type: "rider_assigned",
+        type: "rider_assigned",
           title: "Rider Assigned",
           message: `Rider ${rider.name} (${rider.phone_number}) has been assigned to your pickup. They will contact you soon.`,
           related_entity_id: reportId
@@ -223,13 +282,14 @@ export default function AdminWasteReports() {
 
         if (notificationError) {
           console.error('Notification error:', notificationError);
-          // Don't throw here, the main update was successful
         }
 
         toast({
           title: "Rider Assigned",
-          description: "Farmer has been notified of rider assignment",
+          description: `Rider ${rider.name} has been assigned successfully`,
         });
+        
+        showActionNotification(`Rider ${rider.name} assigned! Farmer notified.`);
       }
 
       fetchData();
@@ -238,6 +298,86 @@ export default function AdminWasteReports() {
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to assign rider",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleMarkCollected = async (reportId: string) => {
+    try {
+      console.log('Marking report as collected:', reportId);
+      
+      // Use the updateReportStatus function to avoid column issues
+      await updateReportStatus(reportId, 'collected');
+
+      // Get the report details for notification
+      const { data: report } = await supabase
+        .from("waste_reports")
+        .select("farmer_id, waste_type, quantity_kg")
+        .eq("id", reportId)
+        .single();
+
+      if (report) {
+        // Send real-time notification to farmer
+        const { error: notificationError } = await supabase.from("notifications").insert({
+          recipient_id: report.farmer_id,
+          type: "collection_completed",
+          title: "Waste Collection Completed",
+          message: `Your waste collection of ${report.quantity_kg}kg ${report.waste_type.replace('_', ' ')} has been completed. Payment will be processed soon.`,
+          related_entity_id: reportId
+        });
+
+        if (notificationError) {
+          console.error('Notification error:', notificationError);
+        }
+
+        showActionNotification("Collection marked! Payment processing initiated.");
+      }
+    } catch (error) {
+      console.error('Error marking as collected:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to mark as collected",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateReportStatus = async (reportId: string, newStatus: 'reported' | 'scheduled' | 'collected' | 'processed') => {
+    try {
+      console.log('Updating report status:', reportId, 'to:', newStatus);
+      
+      const { error } = await supabase
+        .from("waste_reports")
+        .update({ 
+          status: newStatus,
+          collected_date: newStatus === 'collected' ? new Date().toISOString() : null
+        })
+        .eq("id", reportId);
+
+      if (error) {
+        console.error('Status update error:', error);
+        throw error;
+      }
+
+      // Update local state immediately
+      setReports(prev => prev.map(report => 
+        report.id === reportId ? { 
+          ...report, 
+          status: newStatus,
+          collected_date: newStatus === 'collected' ? new Date().toISOString() : report.collected_date
+        } : report
+      ));
+
+      toast({
+        title: "Status Updated",
+        description: `Report status updated to ${newStatus}`,
+      });
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update status",
         variant: "destructive",
       });
     }
@@ -256,11 +396,53 @@ export default function AdminWasteReports() {
     switch (status) {
       case 'reported': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300';
       case 'scheduled': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
-      case 'pickup_started': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-300';
-      case 'pickup_completed': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300';
       case 'collected': return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300';
+      case 'processed': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300';
     }
+  };
+
+  const openAssignRiderModal = (report: any) => {
+    setSelectedReportForRider(report);
+    setSelectedRiderId("");
+    setShowAssignRiderModal(true);
+  };
+
+  const handleAssignRiderFromModal = async () => {
+    if (!selectedRiderId || !selectedReportForRider) return;
+
+    try {
+      await handleAssignRider(selectedReportForRider.id, selectedRiderId);
+      setShowAssignRiderModal(false);
+      setSelectedReportForRider(null);
+      setSelectedRiderId("");
+    } catch (error) {
+      console.error('Error assigning rider from modal:', error);
+    }
+  };
+
+  const checkDatabaseSchema = async () => {
+    try {
+      // Try to fetch a single record to check what columns exist
+      const { data, error } = await supabase
+        .from("waste_reports")
+        .select("*")
+        .limit(1);
+
+      if (error) {
+        console.error('Schema check error:', error);
+        return false;
+      }
+
+      if (data && data.length > 0) {
+        const columns = Object.keys(data[0]);
+        console.log('Available columns in waste_reports:', columns);
+        return true;
+      }
+    } catch (error) {
+      console.error('Error checking schema:', error);
+    }
+    return false;
   };
 
   if (loading) {
@@ -275,6 +457,16 @@ export default function AdminWasteReports() {
 
   return (
     <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+      {/* Notification Banner */}
+      {showNotification && (
+        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-in slide-in-from-right">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5" />
+            <span>{notificationMessage}</span>
+          </div>
+        </div>
+      )}
+
       {/* Header Section */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
         <div className="px-6 py-4">
@@ -319,9 +511,8 @@ export default function AdminWasteReports() {
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="reported">Reported</SelectItem>
                     <SelectItem value="scheduled">Scheduled</SelectItem>
-                    <SelectItem value="pickup_started">Pickup Started</SelectItem>
-                    <SelectItem value="pickup_completed">Pickup Completed</SelectItem>
                     <SelectItem value="collected">Collected</SelectItem>
+                    <SelectItem value="processed">Processed</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -384,38 +575,36 @@ export default function AdminWasteReports() {
                   </div>
 
                   <div className="flex flex-col gap-2 ml-4">
-                    {!report.admin_verified && (
+                    {/* Status-based action buttons */}
+                    {report.status === 'reported' && (
                       <Button 
                         onClick={() => handleVerify(report.id)}
-                        className="bg-green-600 hover:bg-green-700"
+                        className="bg-green-600 hover:bg-green-700 text-white"
                       >
                         <CheckCircle className="h-4 w-4 mr-2" />
-                        Verify
+                        Verify Report
                       </Button>
                     )}
                     
-                    {report.admin_verified && !report.rider_id && (
-                      <div className="flex gap-2">
-                        <Select
-                          onValueChange={(riderId) => handleAssignRider(report.id, riderId)}
-                          defaultValue=""
-                        >
-                          <SelectTrigger className="w-40">
-                            <SelectValue placeholder="Assign Rider" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {riders.map(r => (
-                              <SelectItem key={r.id} value={r.id}>
-                                {r.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    {report.status === 'scheduled' && !report.rider_id && (
+                      <Button 
+                        onClick={() => openAssignRiderModal(report)}
+                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                      >
+                        <User className="h-4 w-4 mr-2" />
+                        Assign Rider
+                      </Button>
                     )}
                     
-                    {report.rider_id && (
+                    {report.status === 'scheduled' && report.rider_id && (
                       <div className="flex gap-2">
+                        <Button 
+                          onClick={() => updateReportStatus(report.id, 'collected')}
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                          <Truck className="h-4 w-4 mr-2" />
+                          Mark Collected
+                        </Button>
                         <Button 
                           variant="outline"
                           onClick={() => {
@@ -423,8 +612,23 @@ export default function AdminWasteReports() {
                             setShowTracking(true);
                           }}
                         >
-                          <Truck className="h-4 w-4 mr-2" />
+                          <MapPin className="h-4 w-4 mr-2" />
                           Track
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {report.status === 'collected' && (
+                      <div className="flex gap-2">
+                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300">
+                          Completed
+                        </Badge>
+                        <Button 
+                          onClick={() => handleMarkCollected(report.id)}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          <DollarSign className="h-4 w-4 mr-2" />
+                          Process Payment
                         </Button>
                       </div>
                     )}
@@ -445,6 +649,75 @@ export default function AdminWasteReports() {
           </Card>
         )}
       </div>
+
+      {/* Assign Rider Modal */}
+      {showAssignRiderModal && selectedReportForRider && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Assign Rider
+              </h2>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowAssignRiderModal(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  Assign a rider to this waste report:
+                </p>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  {selectedReportForRider.waste_type.replace('_', ' ')} - {selectedReportForRider.quantity_kg}kg
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Location: {selectedReportForRider.location}
+                </p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Select Rider
+                </label>
+                <Select value={selectedRiderId} onValueChange={setSelectedRiderId}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Choose a rider" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {riders.map(rider => (
+                      <SelectItem key={rider.id} value={rider.id}>
+                        {rider.name} - {rider.phone_number}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex gap-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowAssignRiderModal(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleAssignRiderFromModal}
+                  disabled={!selectedRiderId}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  Assign Rider
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tracking Modal */}
       {showTracking && selectedReport && (
@@ -467,4 +740,4 @@ export default function AdminWasteReports() {
       )}
     </div>
   );
-}
+  }

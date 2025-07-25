@@ -45,11 +45,88 @@ const handler = async (req: Request): Promise<Response> => {
     if (text === '') {
       // Main menu
       response = `CON Welcome to Captain Compost
-1. Report Waste
-2. Check Status  
-3. My Payments
-4. Buy Products`;
+1. Register as Farmer
+2. Report Waste
+3. Check Status  
+4. My Profile
+5. My Payments
+6. Buy Products`;
     } else if (inputs[0] === '1') {
+      // Farmer registration flow
+      if (level === 1) {
+        response = `CON Enter your full name:`;
+      } else if (level === 2) {
+        response = `CON Enter your location (village/town):`;
+      } else if (level === 3) {
+        response = `CON Enter your farm type:
+1. Dairy Farm
+2. Coffee Farm
+3. Maize Farm
+4. Mixed Farming
+5. Other`;
+      } else if (level === 4) {
+        response = `CON Enter your ID number:`;
+      } else if (level === 5) {
+        response = `CON Enter farm size (acres):`;
+      } else if (level === 6) {
+        // Process the registration
+        const fullName = inputs[1];
+        const location = inputs[2];
+        const farmTypeIndex = parseInt(inputs[3]);
+        const farmTypes = ['', 'dairy', 'coffee', 'maize', 'mixed', 'other'];
+        const farmType = farmTypes[farmTypeIndex];
+        const idNumber = inputs[4];
+        const farmSize = inputs[5];
+
+        if (!fullName || !location || !farmType || !idNumber || !farmSize) {
+          response = `END Invalid input. Please try again.`;
+        } else {
+          // Check if farmer already exists
+          const { data: existingProfile } = await supabase
+            .from('profiles')
+            .select('id, full_name, location')
+            .eq('phone_number', phoneNumber)
+            .single();
+
+          if (existingProfile) {
+            response = `END You are already registered!
+Name: ${existingProfile.full_name}
+Location: ${existingProfile.location}
+Phone: ${phoneNumber}`;
+          } else {
+            // Create new farmer profile
+            const { data: newProfile, error: profileError } = await supabase
+              .from('profiles')
+              .insert({
+                full_name: fullName,
+                phone_number: phoneNumber,
+                location: location,
+                role: 'farmer',
+                farm_type: farmType,
+                id_number: idNumber,
+                farm_size: farmSize
+              })
+              .select('id, full_name, location')
+              .single();
+
+            if (profileError) {
+              console.error('Profile creation error:', profileError);
+              response = `END Error creating profile. Please try again.`;
+            } else {
+              response = `END Registration successful!
+Name: ${newProfile.full_name}
+Location: ${newProfile.location}
+Phone: ${phoneNumber}
+Farm Type: ${farmType}
+ID Number: ${idNumber}
+Farm Size: ${farmSize} acres
+
+You can now report waste and earn money!`;
+            }
+          }
+        }
+      }
+    } else if (inputs[0] === '2') {
       // Report waste flow
       if (level === 1) {
         response = `CON Select waste type:
@@ -85,7 +162,8 @@ const handler = async (req: Request): Promise<Response> => {
               .insert({
                 full_name: `Farmer ${phoneNumber}`,
                 phone_number: phoneNumber,
-                role: 'farmer'
+                role: 'farmer',
+                location: location
               })
               .select('id')
               .single();
@@ -124,7 +202,7 @@ We will contact you for pickup.`;
           }
         }
       }
-    } else if (inputs[0] === '2') {
+    } else if (inputs[0] === '3') {
       // Check status
       const { data: profile } = await supabase
         .from('profiles')
@@ -151,9 +229,44 @@ We will contact you for pickup.`;
           response = `END No waste reports found for your number.`;
         }
       } else {
-        response = `END No profile found. Please report waste first.`;
+        response = `END No profile found. Please register first.`;
       }
-    } else if (inputs[0] === '3') {
+    } else if (inputs[0] === '4') {
+      // My Profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, phone_number, location, created_at, farm_type, id_number, farm_size')
+        .eq('phone_number', phoneNumber)
+        .single();
+
+      if (profile) {
+        const { data: reports } = await supabase
+          .from('waste_reports')
+          .select('quantity_kg, status')
+          .eq('farmer_id', profile.id);
+
+        const { data: payments } = await supabase
+          .from('payments')
+          .select('amount, status')
+          .eq('farmer_id', profile.id)
+          .eq('status', 'completed');
+
+        const totalReports = reports?.length || 0;
+        const totalEarnings = payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
+        const joinDate = new Date(profile.created_at).toLocaleDateString();
+
+        response = `END Your Profile:
+Name: ${profile.full_name}
+Phone: ${profile.phone_number}
+Location: ${profile.location || 'Not set'}
+Farm Type: ${profile.farm_type || 'Not set'}
+Joined: ${joinDate}
+Total Reports: ${totalReports}
+Total Earnings: KES ${totalEarnings.toFixed(2)}`;
+      } else {
+        response = `END No profile found. Please register first.`;
+      }
+    } else if (inputs[0] === '5') {
       // Check payments
       const { data: profile } = await supabase
         .from('profiles')
@@ -181,9 +294,9 @@ We will contact you for pickup.`;
           response = `END No payments found.`;
         }
       } else {
-        response = `END No profile found. Please report waste first.`;
+        response = `END No profile found. Please register first.`;
       }
-    } else if (inputs[0] === '4') {
+    } else if (inputs[0] === '6') {
       // Buy products flow
       if (level === 1) {
         response = `CON Select product:
@@ -260,6 +373,60 @@ Location: ${location}
 Pay via M-Pesa: 0700000000
 We will deliver within 2-3 days.`;
             }
+          }
+        }
+      }
+    } else if (inputs[0] === '7') {
+      // Update Profile
+      if (level === 1) {
+        response = `CON Enter your full name:`;
+      } else if (level === 2) {
+        response = `CON Enter your location (village/town):`;
+      } else if (level === 3) {
+        response = `CON Enter your farm type:
+1. Dairy Farm
+2. Coffee Farm
+3. Maize Farm
+4. Mixed Farming
+5. Other`;
+      } else if (level === 4) {
+        response = `CON Enter your ID number:`;
+      } else if (level === 5) {
+        response = `CON Enter farm size (acres):`;
+      } else if (level === 6) {
+        // Process the update
+        const fullName = inputs[1];
+        const location = inputs[2];
+        const farmTypeIndex = parseInt(inputs[3]);
+        const farmTypes = ['', 'dairy', 'coffee', 'maize', 'mixed', 'other'];
+        const farmType = farmTypes[farmTypeIndex];
+        const idNumber = inputs[4];
+        const farmSize = inputs[5];
+
+        if (!fullName || !location || !farmType || !idNumber || !farmSize) {
+          response = `END Invalid input. Please try again.`;
+        } else {
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({
+              full_name: fullName,
+              location: location,
+              farm_type: farmType,
+              id_number: idNumber,
+              farm_size: farmSize
+            })
+            .eq('phone_number', phoneNumber);
+
+          if (updateError) {
+            console.error('Profile update error:', updateError);
+            response = `END Error updating profile. Please try again.`;
+          } else {
+            response = `END Profile updated successfully!
+Name: ${fullName}
+Location: ${location}
+Farm Type: ${farmType}
+ID Number: ${idNumber}
+Farm Size: ${farmSize} acres`;
           }
         }
       }

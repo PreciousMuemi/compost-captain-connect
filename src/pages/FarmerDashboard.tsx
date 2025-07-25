@@ -177,20 +177,20 @@ export default function FarmerDashboard() {
     <>
       {/* Modern Header */}
       <div className="flex justify-between items-center mb-8">
-        <div>
+          <div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
             Welcome back, {profile?.full_name}
           </h1>
           <p className="text-muted-foreground mt-2">Here's what's happening with your farm today</p>
-        </div>
+          </div>
         <Button 
           onClick={() => setIsReportModalOpen(true)}
           className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg"
         >
-          <Plus className="h-4 w-4 mr-2" />
-          Report Waste
-        </Button>
-      </div>
+            <Plus className="h-4 w-4 mr-2" />
+            Report Waste
+          </Button>
+        </div>
 
       {/* Modern Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -265,61 +265,61 @@ export default function FarmerDashboard() {
             </div>
           </CardContent>
         </Card>
-      </div>
+        </div>
 
       {/* Modern Product Section */}
       <Card className="mb-8">
-        <CardHeader>
+          <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl">
             <Leaf className="h-6 w-6 text-green-600" />
-            Buy Organic Products
-          </CardTitle>
+              Buy Organic Products
+            </CardTitle>
           <CardDescription className="text-lg">Premium quality manure and fertilizer for your farm</CardDescription>
-        </CardHeader>
-        <CardContent>
+          </CardHeader>
+          <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {products.map((product) => (
+              {products.map((product) => (
               <Card key={product.id} className="hover:shadow-xl transition-all duration-300 border-2 hover:border-green-200 dark:hover:border-green-800">
                 <CardContent className="p-6">
                   <div className="space-y-4">
-                    <div>
+                  <div>
                       <h3 className="text-xl font-semibold text-foreground">{product.name}</h3>
                       <p className="text-muted-foreground mt-2">{product.description}</p>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-2xl font-bold text-green-600">KES {product.price_per_kg ? product.price_per_kg : 0}/kg</p>
-                        <p className="text-sm text-muted-foreground">
-                          {product.available_kg} kg available
-                        </p>
-                      </div>
-                      <Button 
-                        onClick={() => handleBuyProduct(product)}
-                        disabled={product.available_kg === 0}
-                        className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg"
-                      >
-                        <ShoppingCart className="h-4 w-4 mr-2" />
-                        Buy Now
-                      </Button>
-                    </div>
                   </div>
+                  <div className="flex justify-between items-center">
+                    <div>
+                        <p className="text-2xl font-bold text-green-600">KES {product.price_per_kg ? product.price_per_kg : 0}/kg</p>
+                      <p className="text-sm text-muted-foreground">
+                        {product.available_kg} kg available
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={() => handleBuyProduct(product)}
+                      disabled={product.available_kg === 0}
+                        className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg"
+                    >
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                      Buy Now
+                    </Button>
+                  </div>
+                </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
       {/* Modern Recent Reports */}
-      <Card>
-        <CardHeader>
+        <Card>
+          <CardHeader>
           <CardTitle className="text-2xl">Recent Waste Reports</CardTitle>
           <CardDescription>Your latest waste collection activities</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {recentReports.length > 0 ? (
-            <div className="space-y-4">
-              {recentReports.map((report) => (
+          </CardHeader>
+          <CardContent>
+            {recentReports.length > 0 ? (
+              <div className="space-y-4">
+                {recentReports.map((report) => (
                 <Card key={report.id} className="hover:shadow-lg transition-shadow border-l-4 border-l-green-500">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
@@ -327,30 +327,30 @@ export default function FarmerDashboard() {
                         {getStatusIcon(report.status)}
                         <div>
                           <h3 className="font-semibold text-foreground capitalize">{report.waste_type.replace('_', ' ')}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {report.quantity_kg}kg • {report.location}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(report.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
+                      <p className="text-sm text-muted-foreground">
+                        {report.quantity_kg}kg • {report.location}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(report.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
                       </div>
                       <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300">
-                        {report.status}
-                      </Badge>
-                    </div>
+                      {report.status}
+                    </Badge>
+                  </div>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-          ) : (
+                ))}
+              </div>
+            ) : (
             <div className="text-center py-8">
               <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
               <p className="text-muted-foreground">No waste reports yet. Start by reporting your first waste!</p>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
 
       {/* Product Purchase Modal */}
       <MpesaPaymentModal

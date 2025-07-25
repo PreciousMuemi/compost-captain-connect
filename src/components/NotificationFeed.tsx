@@ -9,9 +9,9 @@ function ReportStatusTimeline({ report }) {
     { label: "Reported", done: true },
     { label: "Admin Verified", done: report.admin_verified },
     { label: "Rider Assigned", done: !!report.rider_id },
-    { label: "Pickup Started", done: !!report.pickup_started_at },
-    { label: "Pickup Completed", done: !!report.pickup_completed_at },
-    { label: "Paid", done: report.paid },
+    { label: "Collected", done: report.status === 'collected' || report.status === 'processed' },
+    { label: "Processed", done: report.status === 'processed' },
+    { label: "Paid", done: report.status === 'processed' },
   ];
   return (
     <div className="flex gap-2 my-2">

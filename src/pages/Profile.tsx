@@ -80,7 +80,7 @@ export default function Profile() {
         ] = await Promise.all([
           supabase.from("waste_reports").select("status, quantity_kg, created_at, waste_type"),
           supabase.from("payments").select("amount, status, created_at"),
-          supabase.from("orders").select("total_amount, status, created_at, delivery_address"),
+          supabase.from("orders").select("total_amount, status, created_at"),
           supabase.from("profiles").select("id").eq("role", "farmer"),
           supabase.from("inventory").select("stock_quantity, price_per_unit, name"),
           supabase.from("notifications").select("created_at").order("created_at", { ascending: false }).limit(1),

@@ -97,22 +97,22 @@ export function TrackingTimeline({ entityId, entityType, onStatusChange }: Track
               details: report.riders ? `Assigned to ${report.riders.name}` : 'Awaiting rider assignment'
             },
             {
-              id: 'pickup_started',
-              label: 'Pickup Started',
-              description: 'Rider started pickup process',
+              id: 'collected',
+              label: 'Collected',
+              description: 'Waste has been collected',
               icon: <Truck className="h-5 w-5" />,
-              done: !!report.pickup_started_at,
-              timestamp: report.pickup_started_at,
-              details: report.pickup_started_at ? 'Rider is on the way' : 'Awaiting pickup start'
+              done: report.status === 'collected' || report.status === 'processed',
+              timestamp: report.collected_date,
+              details: report.status === 'collected' || report.status === 'processed' ? 'Waste collected successfully' : 'Awaiting collection'
             },
             {
-              id: 'pickup_completed',
-              label: 'Pickup Completed',
-              description: 'Waste collected successfully',
+              id: 'processed',
+              label: 'Processed',
+              description: 'Waste has been processed and payment completed',
               icon: <Package className="h-5 w-5" />,
-              done: !!report.pickup_completed_at,
-              timestamp: report.pickup_completed_at,
-              details: report.pickup_completed_at ? 'Waste collected and transported' : 'Awaiting pickup completion'
+              done: report.status === 'processed',
+              timestamp: report.updated_at,
+              details: report.status === 'processed' ? 'Waste processed and payment completed' : 'Awaiting processing'
             },
             {
               id: 'paid',

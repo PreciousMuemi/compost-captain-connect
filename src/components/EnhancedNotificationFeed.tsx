@@ -26,10 +26,10 @@ const getNotificationIcon = (type: string) => {
       return <CheckCircle className="h-5 w-5 text-green-600" />;
     case 'rider_assigned':
       return <Truck className="h-5 w-5 text-blue-600" />;
-    case 'pickup_started':
-      return <MapPin className="h-5 w-5 text-orange-600" />;
-    case 'pickup_completed':
+    case 'collection_completed':
       return <Package className="h-5 w-5 text-purple-600" />;
+    case 'payment_processed':
+      return <DollarSign className="h-5 w-5 text-green-600" />;
     case 'payment_received':
       return <DollarSign className="h-5 w-5 text-green-600" />;
     case 'delivery_status':
@@ -52,11 +52,11 @@ const getNotificationColor = (type: string) => {
     case 'rider_assigned':
     case 'delivery_status':
       return 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800';
-    case 'pickup_started':
-      return 'bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-800';
-    case 'pickup_completed':
+    case 'collection_completed':
     case 'order_delivered':
       return 'bg-purple-50 border-purple-200 dark:bg-purple-900/20 dark:border-purple-800';
+    case 'payment_processed':
+      return 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800';
     default:
       return 'bg-gray-50 border-gray-200 dark:bg-gray-900/20 dark:border-gray-800';
   }
