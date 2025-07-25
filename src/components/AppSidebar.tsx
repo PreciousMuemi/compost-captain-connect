@@ -13,7 +13,10 @@ import {
   Bell,
   MapPin,
   Settings,
-  Plus
+  Plus,
+  MessageCircle,
+  Activity,
+  User
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -41,6 +44,8 @@ const getNavigationItems = (userRole: string) => {
       ...baseItems,
       { name: "Report Waste", href: "/waste-reports", icon: Plus, roles: ['farmer'] },
       { name: "My Reports", href: "/my-reports", icon: FileText, roles: ['farmer'] },
+      { name: "Profile", href: "/profile", icon: User, roles: ['farmer'] },
+      { name: "Notifications", href: "/notifications", icon: Bell, roles: ['farmer'] },
     ];
   }
 
@@ -56,13 +61,30 @@ const getNavigationItems = (userRole: string) => {
     ];
   }
 
-  if (userRole === 'admin' || userRole === 'dispatch') {
+  if (userRole === 'admin') {
     return [
-      ...baseItems,
-      { name: "Waste Reports", href: "/waste-reports", icon: FileText, roles: ['admin', 'dispatch'] },
-      { name: "Farmers", href: "/farmers", icon: Users, roles: ['admin', 'dispatch'] },
-      { name: "Payments", href: "/payments", icon: CreditCard, roles: ['admin', 'dispatch'] },
-      { name: "Analytics", href: "/analytics", icon: TrendingUp, roles: ['admin', 'dispatch'] },
+      { name: "Dashboard", href: "/admin", icon: Home, roles: ['admin'] },
+      { name: "Waste Reports", href: "/admin/waste-reports", icon: FileText, roles: ['admin'] },
+      { name: "Farmers", href: "/farmers", icon: Users, roles: ['admin'] },
+      { name: "Payments", href: "/payments", icon: CreditCard, roles: ['admin'] },
+      { name: "Analytics", href: "/analytics", icon: TrendingUp, roles: ['admin'] },
+      { name: "Support Tickets", href: "/admin-tickets", icon: MessageCircle, roles: ['admin'] },
+      { name: "Orders", href: "/admin-orders", icon: Package, roles: ['admin'] },
+      { name: "Inventory", href: "/admin-inventory", icon: ShoppingCart, roles: ['admin'] },
+      { name: "Activity", href: "/activity", icon: Activity, roles: ['admin'] },
+      { name: "Settings", href: "/settings", icon: Settings, roles: ['admin'] },
+    ];
+  }
+
+  if (userRole === 'dispatch') {
+    return [
+      { name: "Dashboard", href: "/dispatch-dashboard", icon: Home, roles: ['dispatch'] },
+      { name: "Orders", href: "/dispatch-dashboard", icon: Package, roles: ['dispatch'] },
+      { name: "Riders", href: "/riders", icon: Truck, roles: ['dispatch'] },
+      { name: "Inventory", href: "/inventory", icon: ShoppingCart, roles: ['dispatch'] },
+      { name: "Notifications", href: "/notifications", icon: Bell, roles: ['dispatch'] },
+      { name: "Map", href: "/dispatch-map", icon: MapPin, roles: ['dispatch'] },
+      { name: "Settings", href: "/settings", icon: Settings, roles: ['dispatch'] },
     ];
   }
 

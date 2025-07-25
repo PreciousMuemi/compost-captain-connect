@@ -36,6 +36,12 @@ import { FloatingTicketButton } from "@/components/FloatingTicketButton";
 import { TopRightHeader } from "@/components/TopRightHeader";
 import Profile from "@/pages/Profile";
 import AdminTickets from "@/pages/AdminTickets";
+import AdminOrders from "@/pages/AdminOrders";
+import AdminInventory from "@/pages/AdminInventory";
+import AdminActivity from "@/pages/AdminActivity";
+import AdminSettings from "@/pages/AdminSettings";
+import AdminWasteReports from "@/pages/AdminWasteReports";
+import { EnhancedTicketSystem } from "@/components/EnhancedTicketSystem";
 
 function DashboardSelector() {
   const { profile, loading, signOut } = useAuth();
@@ -201,11 +207,11 @@ function AppContent() {
           element={<FarmerHistory />}
         />
         <Route
-          path="/waste-reports"
+          path="/admin/waste-reports"
           element={
             <ProtectedRoute allowedRoles={["admin"]}>
               <DashboardLayout>
-                <WasteReports />
+                <AdminWasteReports />
               </DashboardLayout>
             </ProtectedRoute>
           }
@@ -263,10 +269,26 @@ function AppContent() {
         <Route
           path="/notifications"
           element={
-            <ProtectedRoute allowedRoles={['dispatch']}>
-              <DashboardLayout>
-                <Notifications />
-              </DashboardLayout>
+            <ProtectedRoute allowedRoles={['farmer', 'admin', 'dispatch']}>
+              {profile?.role === 'farmer' ? (
+                <FarmerSidebar>
+                  <Notifications />
+                </FarmerSidebar>
+              ) : (
+                <DashboardLayout>
+                  <Notifications />
+                </DashboardLayout>
+              )}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/support"
+          element={
+            <ProtectedRoute allowedRoles={['farmer']}>
+              <FarmerSidebar>
+                <EnhancedTicketSystem />
+              </FarmerSidebar>
             </ProtectedRoute>
           }
         />
@@ -283,7 +305,7 @@ function AppContent() {
         <Route
           path="/settings"
           element={
-            <ProtectedRoute allowedRoles={['dispatch']}>
+            <ProtectedRoute allowedRoles={['dispatch', 'admin']}>
               <DashboardLayout>
                 <Settings />
               </DashboardLayout>
@@ -314,6 +336,46 @@ function AppContent() {
             <ProtectedRoute allowedRoles={["admin"]}>
               <DashboardLayout>
                 <AdminTickets />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin-orders"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <DashboardLayout>
+                <AdminOrders />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin-inventory"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <DashboardLayout>
+                <AdminInventory />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/activity"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <DashboardLayout>
+                <AdminActivity />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <DashboardLayout>
+                <AdminSettings />
               </DashboardLayout>
             </ProtectedRoute>
           }

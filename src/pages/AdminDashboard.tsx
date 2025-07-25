@@ -182,6 +182,108 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleVerify = async (reportId: string) => {
+    try {
+      // Update waste report status
+      const { error: updateError } = await supabase
+        .from("waste_reports")
+        .update({ 
+          admin_verified: true, 
+          status: "scheduled",
+          admin_verified_at: new Date().toISOString()
+        })
+        .eq("id", reportId);
+
+      if (updateError) throw updateError;
+
+      // Get the report details for notification
+      const { data: report } = await supabase
+        .from("waste_reports")
+        .select("farmer_id, waste_type, quantity_kg")
+        .eq("id", reportId)
+        .single();
+
+      if (report) {
+        // Send real-time notification to farmer
+        await supabase.from("notifications").insert({
+          recipient_id: report.farmer_id,
+          type: "approval",
+          title: "Waste Report Approved",
+          message: `Your waste report for ${report.quantity_kg}kg of ${report.waste_type.replace('_', ' ')} has been approved. A rider will be assigned soon.`,
+          related_entity_id: reportId
+        });
+
+        toast({
+          title: "Report Verified",
+          description: "Farmer has been notified of approval",
+        });
+      }
+
+      fetchAdminData();
+    } catch (error) {
+      console.error('Error verifying report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to verify report",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAssignRider = async (reportId: string, riderId: string) => {
+    try {
+      // Update waste report with rider assignment
+      const { error: updateError } = await supabase
+        .from("waste_reports")
+        .update({ 
+          rider_id: riderId, 
+          status: "scheduled",
+          rider_assigned_at: new Date().toISOString()
+        })
+        .eq("id", reportId);
+
+      if (updateError) throw updateError;
+
+      // Get the report and rider details for notification
+      const { data: report } = await supabase
+        .from("waste_reports")
+        .select("farmer_id, waste_type, quantity_kg")
+        .eq("id", reportId)
+        .single();
+
+      const { data: rider } = await supabase
+        .from("riders")
+        .select("name, phone_number")
+        .eq("id", riderId)
+        .single();
+
+      if (report && rider) {
+        // Send real-time notification to farmer
+        await supabase.from("notifications").insert({
+          recipient_id: report.farmer_id,
+          type: "rider_assigned",
+          title: "Rider Assigned",
+          message: `Rider ${rider.name} (${rider.phone_number}) has been assigned to your pickup. They will contact you soon.`,
+          related_entity_id: reportId
+        });
+
+        toast({
+          title: "Rider Assigned",
+          description: "Farmer has been notified of rider assignment",
+        });
+      }
+
+      fetchAdminData();
+    } catch (error) {
+      console.error('Error assigning rider:', error);
+      toast({
+        title: "Error",
+        description: "Failed to assign rider",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
@@ -324,7 +426,7 @@ export default function AdminDashboard() {
             </Button>
             <Button 
               variant="outline" 
-              onClick={() => navigate('/waste-reports')}
+              onClick={() => navigate('/admin/waste-reports')}
               className="h-16 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200"
             >
               <Package className="h-5 w-5 mr-3 text-blue-600" />
@@ -353,6 +455,28 @@ export default function AdminDashboard() {
               <div className="text-left">
                 <div className="font-semibold">Support Tickets</div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">Handle user requests</div>
+              </div>
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/admin-orders')}
+              className="h-16 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all duration-200"
+            >
+              <Package className="h-5 w-5 mr-3 text-indigo-600" />
+              <div className="text-left">
+                <div className="font-semibold">Orders</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">Manage customer orders</div>
+              </div>
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/admin-inventory')}
+              className="h-16 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-teal-500 dark:hover:border-teal-500 hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-all duration-200"
+            >
+              <ShoppingCart className="h-5 w-5 mr-3 text-teal-600" />
+              <div className="text-left">
+                <div className="font-semibold">Inventory</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">Manage products & stock</div>
               </div>
             </Button>
           </div>

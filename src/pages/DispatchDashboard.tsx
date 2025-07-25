@@ -199,6 +199,48 @@ export default function DispatchDashboard() {
 
       if (error) throw error;
 
+      // Get order details for notification
+      const { data: order } = await supabase
+        .from('orders')
+        .select('customer_id, total_amount, customers(name, phone_number)')
+        .eq('id', orderId)
+        .single();
+
+      const { data: rider } = await supabase
+        .from('riders')
+        .select('name, phone_number')
+        .eq('id', riderId)
+        .single();
+
+      if (order && rider) {
+        // Send notification to customer
+        await supabase.from('notifications').insert({
+          recipient_id: order.customer_id,
+          type: 'rider_assigned',
+          title: 'Rider Assigned to Your Order',
+          message: `Rider ${rider.name} (${rider.phone_number}) has been assigned to your order. They will contact you soon.`,
+          related_entity_id: orderId
+        });
+
+        // Also notify any associated farmers
+        const { data: farmers } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('role', 'farmer');
+
+        if (farmers) {
+          for (const farmer of farmers) {
+            await supabase.from('notifications').insert({
+              recipient_id: farmer.id,
+              type: 'order_update',
+              title: 'New Order Assigned',
+              message: `A new order has been assigned to rider ${rider.name}.`,
+              related_entity_id: orderId
+            });
+          }
+        }
+      }
+
       toast({
         title: "Success",
         description: "Rider assigned successfully",
@@ -223,6 +265,44 @@ export default function DispatchDashboard() {
         .eq('id', orderId);
 
       if (error) throw error;
+
+      // Get order details for notification
+      const { data: order } = await supabase
+        .from('orders')
+        .select('customer_id, total_amount, customers(name, phone_number)')
+        .eq('id', orderId)
+        .single();
+
+      if (order) {
+        // Send notification to customer
+        await supabase.from('notifications').insert({
+          recipient_id: order.customer_id,
+          type: 'order_status',
+          title: 'Order Status Updated',
+          message: `Your order status has been updated to ${newStatus.replace('_', ' ')}.`,
+          related_entity_id: orderId
+        });
+
+        // If delivered, notify farmers about successful delivery
+        if (newStatus === 'delivered') {
+          const { data: farmers } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('role', 'farmer');
+
+          if (farmers) {
+            for (const farmer of farmers) {
+              await supabase.from('notifications').insert({
+                recipient_id: farmer.id,
+                type: 'delivery_success',
+                title: 'Order Delivered Successfully',
+                message: `An order has been successfully delivered to ${order.customers?.name}.`,
+                related_entity_id: orderId
+              });
+            }
+          }
+        }
+      }
 
       toast({
         title: "Success",
