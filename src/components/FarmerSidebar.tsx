@@ -78,16 +78,16 @@ export const FarmerSidebar = ({ children }: SidebarProps) => {
       <Button
         variant="ghost"
         size="sm"
-        className="fixed top-4 left-4 z-50 md:hidden bg-white shadow-md border"
+        className="fixed top-4 left-4 z-50 md:hidden bg-white shadow-md border rounded-full w-10 h-10 flex items-center justify-center"
         onClick={() => setIsOpen(!isOpen)}
       >
-        {isOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+        {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </Button>
 
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out
-        md:relative md:translate-x-0 md:shadow-lg
+        fixed inset-y-0 left-0 z-40 w-80 bg-white shadow-xl transform transition-transform duration-300 ease-in-out
+        md:relative md:translate-x-0 md:w-64 md:shadow-lg
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex flex-col h-full">
@@ -177,7 +177,7 @@ export const FarmerSidebar = ({ children }: SidebarProps) => {
       )}
 
       {/* Main content */}
-      <main className="flex-1 h-screen overflow-y-scroll bg-background pt-16">
+      <main className="flex-1 h-screen overflow-y-scroll bg-background pt-16 md:pt-0">
         {children}
       </main>
     </div>

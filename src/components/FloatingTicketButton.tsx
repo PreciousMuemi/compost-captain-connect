@@ -40,6 +40,13 @@ export function FloatingTicketButton() {
     }
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.target === buttonRef.current || buttonRef.current?.contains(e.target as Node)) {
+      setIsDragging(true);
+      e.preventDefault();
+    }
+  };
+
   const handleMouseMove = (e: MouseEvent) => {
     if (isDragging) {
       const newX = Math.max(0, Math.min(window.innerWidth - 60, e.clientX - 30));
@@ -48,7 +55,21 @@ export function FloatingTicketButton() {
     }
   };
 
+  const handleTouchMove = (e: TouchEvent) => {
+    if (isDragging) {
+      const touch = e.touches[0];
+      const newX = Math.max(0, Math.min(window.innerWidth - 60, touch.clientX - 30));
+      const newY = Math.max(0, Math.min(window.innerHeight - 60, touch.clientY - 30));
+      savePosition({ x: newX, y: newY });
+      e.preventDefault();
+    }
+  };
+
   const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleTouchEnd = () => {
     setIsDragging(false);
   };
 
@@ -56,9 +77,13 @@ export function FloatingTicketButton() {
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleTouchEnd);
       return () => {
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('touchend', handleTouchEnd);
       };
     }
   }, [isDragging]);
@@ -117,13 +142,15 @@ export function FloatingTicketButton() {
           top: position.y,
           zIndex: 1000,
           cursor: isDragging ? 'grabbing' : 'grab',
+          touchAction: 'none',
         }}
         onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
         className="select-none"
       >
         <Button
           size="lg"
-          className="h-14 w-14 rounded-full shadow-lg bg-green-600 hover:bg-green-700 text-white"
+          className="h-14 w-14 rounded-full shadow-lg bg-green-600 hover:bg-green-700 text-white touch-manipulation"
           onClick={() => setIsOpen(true)}
         >
           <MessageCircle className="h-6 w-6" />
@@ -132,8 +159,8 @@ export function FloatingTicketButton() {
 
       {/* Modal */}
       {isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1001]">
-          <Card className="w-full max-w-md mx-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1001] p-4">
+          <Card className="w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-lg">Submit Support Ticket</CardTitle>
               <Button

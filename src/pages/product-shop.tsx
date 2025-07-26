@@ -166,14 +166,14 @@ function ProductShop({ profile }) {
   return (
     <div>
       <h2>Organic Products</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {products.map((product) => (
           <Card key={product.id}>
             <CardContent>
               <img
                 src={product.image_url}
                 alt={product.name}
-                className="w-full h-32 object-cover rounded"
+                className="w-full h-32 sm:h-40 object-cover rounded"
               />
               <CardTitle className="mt-2">{product.name}</CardTitle>
               <div>{product.description}</div>
@@ -185,9 +185,13 @@ function ProductShop({ profile }) {
           </Card>
         ))}
       </div>
-      <div className="fixed bottom-4 right-4">
-        <Button onClick={() => setIsCartOpen(true)}>
-          Cart ({cart.length})
+      <div className="fixed bottom-4 right-4 z-40">
+        <Button 
+          onClick={() => setIsCartOpen(true)}
+          className="shadow-lg rounded-full h-12 w-12 sm:h-auto sm:w-auto sm:px-4"
+        >
+          <span className="hidden sm:inline">Cart ({cart.length})</span>
+          <span className="sm:hidden">🛒</span>
         </Button>
       </div>
       <Dialog open={isCartOpen} onOpenChange={setIsCartOpen}>

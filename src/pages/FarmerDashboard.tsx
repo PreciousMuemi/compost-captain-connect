@@ -176,16 +176,16 @@ export default function FarmerDashboard() {
   return (
     <>
       {/* Modern Header */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
           <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
             Welcome back, {profile?.full_name}
           </h1>
           <p className="text-muted-foreground mt-2">Here's what's happening with your farm today</p>
           </div>
         <Button 
           onClick={() => setIsReportModalOpen(true)}
-          className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg"
+          className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg w-full sm:w-auto"
         >
             <Plus className="h-4 w-4 mr-2" />
             Report Waste
@@ -193,75 +193,75 @@ export default function FarmerDashboard() {
         </div>
 
       {/* Modern Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
         <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-800">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.totalReports}</p>
-                <p className="text-sm text-blue-600/70 dark:text-blue-400/70">Total Reports</p>
+                <p className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.totalReports}</p>
+                <p className="text-xs sm:text-sm text-blue-600/70 dark:text-blue-400/70">Total Reports</p>
               </div>
-              <Package className="h-8 w-8 text-blue-500" />
+              <Package className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 border-yellow-200 dark:border-yellow-800">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{stats.pendingReports}</p>
-                <p className="text-sm text-yellow-600/70 dark:text-yellow-400/70">Pending Pickup</p>
+                <p className="text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400">{stats.pendingReports}</p>
+                <p className="text-xs sm:text-sm text-yellow-600/70 dark:text-yellow-400/70">Pending Pickup</p>
               </div>
-              <Clock className="h-8 w-8 text-yellow-500" />
+              <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-500" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-800">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">KES {stats.totalEarnings.toLocaleString()}</p>
-                <p className="text-sm text-green-600/70 dark:text-green-400/70">Total Earnings</p>
+                <p className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">KES {stats.totalEarnings.toLocaleString()}</p>
+                <p className="text-xs sm:text-sm text-green-600/70 dark:text-green-400/70">Total Earnings</p>
               </div>
-              <DollarSign className="h-8 w-8 text-green-500" />
+              <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-green-500" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-800">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.totalOrders}</p>
-                <p className="text-sm text-purple-600/70 dark:text-purple-400/70">Product Orders</p>
+                <p className="text-xl sm:text-2xl font-bold text-purple-600 dark:text-purple-400">{stats.totalOrders}</p>
+                <p className="text-xs sm:text-sm text-purple-600/70 dark:text-purple-400/70">Product Orders</p>
               </div>
-              <ShoppingCart className="h-8 w-8 text-purple-500" />
+              <ShoppingCart className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border-orange-200 dark:border-orange-800">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">KES {stats.totalSpent.toLocaleString()}</p>
-                <p className="text-sm text-orange-600/70 dark:text-orange-400/70">Potential Spending</p>
+                <p className="text-xl sm:text-2xl font-bold text-orange-600 dark:text-orange-400">KES {stats.totalSpent.toLocaleString()}</p>
+                <p className="text-xs sm:text-sm text-orange-600/70 dark:text-orange-400/70">Potential Spending</p>
               </div>
-              <TrendingUp className="h-8 w-8 text-orange-500" />
+              <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-orange-500" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 border-emerald-200 dark:border-emerald-800">
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.completedReports}</p>
-                <p className="text-sm text-emerald-600/70 dark:text-emerald-400/70">Completed</p>
+                <p className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.completedReports}</p>
+                <p className="text-xs sm:text-sm text-emerald-600/70 dark:text-emerald-400/70">Completed</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-emerald-500" />
+              <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-500" />
             </div>
           </CardContent>
         </Card>
