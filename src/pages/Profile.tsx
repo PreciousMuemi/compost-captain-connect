@@ -165,7 +165,7 @@ export default function Profile() {
         const totalEarnings = paymentsData.reduce((sum, p) => sum + p.amount, 0);
 
         const totalSpent = ordersData
-          .filter(o => o.status === "confirmed" || o.status === "delivered")
+          .filter(o => o.status === "pending" || o.status === "confirmed" || o.status === "delivered")
           .reduce((sum, o) => sum + o.total_amount, 0);
 
         const averageReportValue = wasteReportsData.length > 0 
@@ -420,7 +420,7 @@ export default function Profile() {
                   <div className="text-2xl font-bold text-blue-600">
                     {statsLoading ? "..." : formatCurrency(stats.totalSpent)}
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Spent</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Potential Spending</p>
                 </div>
                 <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
                   <TrendingUp className="h-6 w-6 text-blue-600" />

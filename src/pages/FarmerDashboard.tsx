@@ -109,7 +109,7 @@ export default function FarmerDashboard() {
         .from('orders')
         .select('total_amount, status')
         .eq('customer_id', customerRecord?.id || '')
-        .in('status', ['confirmed', 'delivered']);
+        .in('status', ['pending', 'confirmed', 'delivered']);
 
       if (reports) {
         const totalReports = reports.length;
@@ -247,7 +247,7 @@ export default function FarmerDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">KES {stats.totalSpent.toLocaleString()}</p>
-                <p className="text-sm text-orange-600/70 dark:text-orange-400/70">Total Spent</p>
+                <p className="text-sm text-orange-600/70 dark:text-orange-400/70">Potential Spending</p>
               </div>
               <TrendingUp className="h-8 w-8 text-orange-500" />
             </div>

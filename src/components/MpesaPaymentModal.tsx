@@ -43,13 +43,34 @@ export function MpesaPaymentModal({
   const totalAmount = product.price_per_kg * quantity;
 
   const handleSTKPush = async () => {
-    if (!phoneNumber) {
+    // Validate phone number format
+    const cleanPhone = phoneNumber.replace(/\s/g, '');
+    
+    if (!cleanPhone) {
       toast({
         title: "Error",
-        description: "Please enter your phone number",
+        description: "Please enter a phone number",
         variant: "destructive",
       });
       return;
+    }
+
+    // Check if phone number starts with valid prefixes
+    if (!cleanPhone.match(/^(254|07|7)\d{8}$/)) {
+      toast({
+        title: "Invalid Phone Number",
+        description: "Please enter a valid Kenyan phone number starting with 254, 07, or 7 (e.g., 254712345678, 0712345678, or 712345678)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Format phone number to 254 format
+    let formattedPhone = cleanPhone;
+    if (cleanPhone.startsWith('07')) {
+      formattedPhone = '254' + cleanPhone.substring(1);
+    } else if (cleanPhone.startsWith('7')) {
+      formattedPhone = '254' + cleanPhone;
     }
 
     setLoading(true);
@@ -68,7 +89,7 @@ export function MpesaPaymentModal({
           .from('customers')
           .insert({
             name: profile?.full_name || 'Unknown',
-            phone_number: profile?.phone_number || phoneNumber,
+            phone_number: profile?.phone_number || formattedPhone,
             is_farmer: true
           })
           .select('id')
@@ -97,7 +118,7 @@ export function MpesaPaymentModal({
       // Initiate M-Pesa STK Push
       const { data, error } = await supabase.functions.invoke('mpesa-payment', {
         body: {
-          phoneNumber: phoneNumber,
+          phoneNumber: formattedPhone,
           amount: totalAmount,
           orderId: order.id,
           farmerId: profile?.id,

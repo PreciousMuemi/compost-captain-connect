@@ -139,7 +139,7 @@ export default function DispatchMapPage() {
     };
   }, []);
 
-  const fetchData = async () => {
+    const fetchData = async () => {
     try {
       setLoading(true);
       await Promise.all([

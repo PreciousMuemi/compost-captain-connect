@@ -70,9 +70,10 @@ function ProductShop({ profile }) {
         .from("customers")
         .select("id")
         .eq("phone_number", phoneNumber)
-        .single();
+        .maybeSingle();
+      
       if (!customer) {
-        const { data: newCustomer } = await supabase
+        const { data: newCustomer, error: customerError } = await supabase
           .from("customers")
           .insert({
             name: profile?.full_name || "Unknown",
@@ -81,6 +82,13 @@ function ProductShop({ profile }) {
           })
           .select("id")
           .single();
+        
+        if (customerError) {
+          console.error("Customer creation error:", customerError);
+          alert("Error creating customer profile. Please try again.");
+          setLoading(false);
+          return;
+        }
         customer = newCustomer;
       }
       // 2. Create order
@@ -100,7 +108,7 @@ function ProductShop({ profile }) {
         return;
       }
 
-      const { data: order } = await supabase
+      const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
           customer_id: customer.id,
@@ -108,10 +116,16 @@ function ProductShop({ profile }) {
           status: "pending",
           price_per_kg: avgPrice,
           quantity_kg: totalQuantity,
-          // add other required fields if needed
         })
         .select("id")
         .single();
+
+      if (orderError) {
+        console.error("Order creation error:", orderError);
+        alert("Error creating order. Please try again.");
+        setLoading(false);
+        return;
+      }
 
       // 3. Create order items
       for (const item of cart) {
@@ -212,10 +226,13 @@ function ProductShop({ profile }) {
                 <Input
                   id="phone"
                   type="tel"
-                  placeholder="2547XXXXXXXX"
+                  placeholder="254712345678 or 0712345678"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter your M-Pesa registered phone number
+                </p>
               </div>
               <Button className="mt-4" onClick={handleCheckout} disabled={loading}>
                 {loading ? "Processing..." : "Checkout & Pay"}
