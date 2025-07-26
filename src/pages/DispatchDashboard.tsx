@@ -376,27 +376,30 @@ export default function DispatchDashboard() {
   return (
     <div className="p-4 md:p-6 max-w-full overflow-x-hidden">
       {/* Header */}
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Dispatch Control Center</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Dispatch Control Center</h1>
           <p className="text-muted-foreground">Welcome, {profile?.full_name}</p>
         </div>
-        <div className="flex items-center space-x-4">
-          <Button variant="outline" onClick={fetchDispatchData}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
+        <div className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto">
+          <Button variant="outline" onClick={fetchDispatchData} size="sm" className="flex-1 sm:flex-none">
+            <RefreshCw className="h-4 w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
           <Button
             variant="outline"
+            size="sm"
             onClick={async () => {
               await supabase.auth.signOut();
               window.location.href = "/login";
             }}
+            className="flex-1 sm:flex-none"
           >
-            Logout
+            <span className="hidden sm:inline">Logout</span>
+            <span className="sm:hidden">Exit</span>
           </Button>
           <div className="relative">
-            <Button variant="outline" className="relative">
+            <Button variant="outline" className="relative" size="sm">
               <Bell className="h-4 w-4" />
               {unreadNotifications > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
@@ -409,7 +412,7 @@ export default function DispatchDashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
         <StatCard
           title="Pending Orders"
           value={pendingOrders}
@@ -439,10 +442,10 @@ export default function DispatchDashboard() {
       {/* Alert Banners */}
       {lowStockItems > 0 && (
         <Card className="border-orange-200 bg-orange-50 mb-4">
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             <div className="flex items-center space-x-2">
-              <AlertTriangle className="h-5 w-5 text-orange-600" />
-              <span className="text-orange-800 font-medium">
+              <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
+              <span className="text-orange-800 font-medium text-sm sm:text-base">
                 {lowStockItems} item(s) are low in stock and need restocking
               </span>
             </div>
@@ -457,16 +460,16 @@ export default function DispatchDashboard() {
           {/* Live Orders Panel */}
           <Card>
             <CardHeader>
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                   <CardTitle className="flex items-center gap-2">
-                    <Package className="h-5 w-5" />
-                    Live Orders Panel
+                    <Package className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <span className="text-lg sm:text-xl">Live Orders Panel</span>
                   </CardTitle>
                   <CardDescription>Manage order assignments and delivery status</CardDescription>
                 </div>
                 <Select value={orderFilter} onValueChange={setOrderFilter}>
-                  <SelectTrigger className="w-[150px]">
+                  <SelectTrigger className="w-full sm:w-[150px]">
                     <SelectValue placeholder="Filter orders" />
                   </SelectTrigger>
                   <SelectContent>
@@ -482,24 +485,24 @@ export default function DispatchDashboard() {
             <CardContent>
               <div className="space-y-4 max-h-96 overflow-y-auto">
                 {filteredOrders.map((order) => (
-                  <div key={order.id} className="border rounded-lg p-4 space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
+                  <div key={order.id} className="border rounded-lg p-3 sm:p-4 space-y-3">
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-medium">Order #{order.id.slice(-6)}</h3>
-                          <Badge className={getStatusColor(order.status)}>
+                          <h3 className="font-medium text-sm sm:text-base">Order #{order.id.slice(-6)}</h3>
+                          <Badge className={`${getStatusColor(order.status)} text-xs`}>
                             {order.status.replace('_', ' ')}
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-xs sm:text-sm text-gray-600">
                           Organic Products • {order.quantity_kg} kg • KES {order.total_amount.toLocaleString()}
                         </p>
                         <div className="flex items-center gap-2 mt-1">
                           <MapPin className="h-3 w-3 text-gray-400" />
-                          <span className="text-xs text-gray-500">{order.delivery_address}</span>
+                          <span className="text-xs text-gray-500 truncate">{order.delivery_address}</span>
                         </div>
                         {order.customer && (
-                          <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 mt-2 text-xs text-gray-500">
                             <span className="flex items-center gap-1">
                               <User className="h-3 w-3" />
                               {order.customer.name}
@@ -511,14 +514,14 @@ export default function DispatchDashboard() {
                           </div>
                         )}
                       </div>
-                      <div className="flex flex-col gap-2 ml-4">
+                      <div className="flex flex-col gap-2 w-full sm:w-auto">
                         {order.status === 'pending' && (
-                          <div className="flex gap-2">
+                          <div className="flex flex-col sm:flex-row gap-2">
                             <Select 
                               value={selectedRider} 
                               onValueChange={setSelectedRider}
                             >
-                              <SelectTrigger className="w-[120px] text-xs">
+                              <SelectTrigger className="w-full sm:w-[120px] text-xs">
                                 <SelectValue placeholder="Assign rider" />
                               </SelectTrigger>
                               <SelectContent>
@@ -536,17 +539,19 @@ export default function DispatchDashboard() {
                               size="sm" 
                               onClick={() => selectedRider && assignRiderToOrder(order.id, selectedRider)}
                               disabled={!selectedRider}
+                              className="w-full sm:w-auto"
                             >
                               Assign
                             </Button>
                           </div>
                         )}
                         {order.status === 'confirmed' && (
-                          <div className="flex gap-2">
+                          <div className="flex flex-col sm:flex-row gap-2">
                             <Button 
                               size="sm" 
                               variant="outline"
                               onClick={() => updateOrderStatus(order.id, 'delivered')}
+                              className="w-full sm:w-auto"
                             >
                               <CheckCircle className="h-3 w-3 mr-1" />
                               Delivered
@@ -555,6 +560,7 @@ export default function DispatchDashboard() {
                               size="sm" 
                               variant="outline"
                               onClick={() => updateOrderStatus(order.id, 'cancelled')}
+                              className="w-full sm:w-auto"
                             >
                               <XCircle className="h-3 w-3 mr-1" />
                               Cancel
@@ -576,24 +582,24 @@ export default function DispatchDashboard() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Warehouse Inventory
+                <Package className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="text-lg sm:text-xl">Warehouse Inventory</span>
               </CardTitle>
               <CardDescription>Real-time stock levels and alerts</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {inventory.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex-1">
-                      <h3 className="font-medium">{item.name}</h3>
-                      <p className="text-sm text-gray-600">
+                  <div key={item.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 border rounded-lg gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-sm sm:text-base">{item.name}</h3>
+                      <p className="text-xs sm:text-sm text-gray-600">
                         Stock: {item.stock_quantity} {item.unit} • 
                         Last restocked: {new Date(item.last_restocked).toLocaleDateString()}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium">KES {item.price_per_unit}/{item.unit}</p>
+                    <div className="text-right w-full sm:w-auto">
+                      <p className="font-medium text-sm sm:text-base">KES {item.price_per_unit}/{item.unit}</p>
                       {item.stock_quantity <= item.low_stock_threshold ? (
                         <Badge variant="destructive" className="text-xs">
                           Low Stock

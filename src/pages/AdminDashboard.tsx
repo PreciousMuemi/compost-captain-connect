@@ -291,14 +291,14 @@ export default function AdminDashboard() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         {/* Header Section */}
         <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          <div className="px-6 py-4">
-        <div className="flex justify-between items-center">
+          <div className="px-4 sm:px-6 py-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
                 <p className="text-gray-600 dark:text-gray-400 mt-1">Waste Management Overview</p>
           </div>
           <button
-                className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg transition-colors duration-200 font-medium"
+                className="bg-red-500 hover:bg-red-600 text-white px-4 sm:px-6 py-2 rounded-lg transition-colors duration-200 font-medium w-full sm:w-auto"
             onClick={async () => {
               await supabase.auth.signOut();
               navigate('/login');
@@ -311,9 +311,9 @@ export default function AdminDashboard() {
         </div>
 
         {/* Main Content */}
-        <div className="p-6 space-y-8">
+        <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           <StatCard
             title="Total Farmers"
             value={stats.totalFarmers}
@@ -410,70 +410,70 @@ export default function AdminDashboard() {
         </Card>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <Button 
               variant="outline" 
               onClick={() => navigate('/farmers')}
-              className="h-16 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-green-500 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all duration-200"
+              className="h-16 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-green-500 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all duration-200 p-3 sm:p-4"
             >
-              <Users className="h-5 w-5 mr-3 text-green-600" />
-              <div className="text-left">
-                <div className="font-semibold">Manage Farmers</div>
+              <Users className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 text-green-600" />
+              <div className="text-left min-w-0">
+                <div className="font-semibold text-sm sm:text-base">Manage Farmers</div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">View & manage farmer accounts</div>
               </div>
             </Button>
             <Button 
               variant="outline" 
               onClick={() => navigate('/admin/waste-reports')}
-              className="h-16 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200"
+              className="h-16 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 p-3 sm:p-4"
             >
-              <Package className="h-5 w-5 mr-3 text-blue-600" />
-              <div className="text-left">
-                <div className="font-semibold">Waste Reports</div>
+              <Package className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 text-blue-600" />
+              <div className="text-left min-w-0">
+                <div className="font-semibold text-sm sm:text-base">Waste Reports</div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">Review waste submissions</div>
               </div>
             </Button>
             <Button 
               variant="outline" 
               onClick={() => navigate('/payments')}
-              className="h-16 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200"
+              className="h-16 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200 p-3 sm:p-4"
             >
-              <DollarSign className="h-5 w-5 mr-3 text-purple-600" />
-              <div className="text-left">
-                <div className="font-semibold">Payments</div>
+              <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 text-purple-600" />
+              <div className="text-left min-w-0">
+                <div className="font-semibold text-sm sm:text-base">Payments</div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">Track payment history</div>
               </div>
           </Button>
             <Button 
               variant="outline" 
               onClick={() => navigate('/admin-tickets')}
-              className="h-16 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-orange-500 dark:hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all duration-200"
+              className="h-16 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-orange-500 dark:hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all duration-200 p-3 sm:p-4"
             >
-              <MessageCircle className="h-5 w-5 mr-3 text-orange-600" />
-              <div className="text-left">
-                <div className="font-semibold">Support Tickets</div>
+              <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 text-orange-600" />
+              <div className="text-left min-w-0">
+                <div className="font-semibold text-sm sm:text-base">Support Tickets</div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">Handle user requests</div>
               </div>
           </Button>
             <Button 
               variant="outline" 
               onClick={() => navigate('/admin-orders')}
-              className="h-16 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all duration-200"
+              className="h-16 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all duration-200 p-3 sm:p-4"
             >
-              <Package className="h-5 w-5 mr-3 text-indigo-600" />
-              <div className="text-left">
-                <div className="font-semibold">Orders</div>
+              <Package className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 text-indigo-600" />
+              <div className="text-left min-w-0">
+                <div className="font-semibold text-sm sm:text-base">Orders</div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">Manage customer orders</div>
               </div>
           </Button>
             <Button 
               variant="outline" 
               onClick={() => navigate('/admin-inventory')}
-              className="h-16 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-teal-500 dark:hover:border-teal-500 hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-all duration-200"
+              className="h-16 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-teal-500 dark:hover:border-teal-500 hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-all duration-200 p-3 sm:p-4"
             >
-              <ShoppingCart className="h-5 w-5 mr-3 text-teal-600" />
-              <div className="text-left">
-                <div className="font-semibold">Inventory</div>
+              <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 text-teal-600" />
+              <div className="text-left min-w-0">
+                <div className="font-semibold text-sm sm:text-base">Inventory</div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">Manage products & stock</div>
               </div>
           </Button>
@@ -550,19 +550,19 @@ function PendingReports({
         const isProcessing = processingPayouts.has(report.id);
         
         return (
-          <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg">
-            <div className="flex-1">
+          <div key={report.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 border rounded-lg gap-3">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2">
-                <h3 className="font-medium">{report.waste_type.replace('_', ' ')}</h3>
-                <Badge variant="outline">{report.status}</Badge>
+                <h3 className="font-medium text-sm sm:text-base">{report.waste_type.replace('_', ' ')}</h3>
+                <Badge variant="outline" className="text-xs">{report.status}</Badge>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 {report.quantity_kg}kg • {report.location}
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Farmer: {report.profiles?.full_name} • {report.profiles?.phone_number}
               </p>
-              <p className="text-sm font-medium text-green-600">
+              <p className="text-xs sm:text-sm font-medium text-green-600">
                 Payment: KES {paymentAmount.toLocaleString()}
               </p>
               <p className="text-xs text-muted-foreground">
@@ -573,10 +573,11 @@ function PendingReports({
               onClick={() => onMarkCollected(report.id, report.farmer_id, paymentAmount)}
               disabled={isProcessing}
               size="sm"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 w-full sm:w-auto"
             >
               <Send className="h-4 w-4" />
-              {isProcessing ? 'Processing...' : 'Collect & Pay'}
+              <span className="hidden sm:inline">{isProcessing ? 'Processing...' : 'Collect & Pay'}</span>
+              <span className="sm:hidden">{isProcessing ? 'Processing...' : 'Pay'}</span>
             </Button>
           </div>
         );
