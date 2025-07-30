@@ -58,10 +58,11 @@ interface Rider {
   last_location?: string;
 }
 
-// Initialize socket connection
-const socket = io("http://localhost:4000", {
-  autoConnect: false
-});
+// Initialize socket connection - disabled for now until server is set up
+// const socket = io("http://localhost:4000", {
+//   autoConnect: false
+// });
+const socket = null;
 
 export default function DispatchMapPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -71,39 +72,43 @@ export default function DispatchMapPage() {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    // Connect to socket
-    socket.connect();
-    
-    socket.on('connect', () => {
-      setIsConnected(true);
-      console.log('Connected to dispatch server');
-    });
+    // Connect to socket when server is available
+    if (socket) {
+      socket.connect();
+      
+      socket.on('connect', () => {
+        setIsConnected(true);
+        console.log('Connected to dispatch server');
+      });
 
-    socket.on('disconnect', () => {
-      setIsConnected(false);
-      console.log('Disconnected from dispatch server');
-    });
+      socket.on('disconnect', () => {
+        setIsConnected(false);
+        console.log('Disconnected from dispatch server');
+      });
 
-    // Listen for real-time updates
-    socket.on('orderUpdate', (data) => {
-      console.log('Real-time order update:', data);
-      fetchData();
-    });
+      // Listen for real-time updates
+      socket.on('orderUpdate', (data) => {
+        console.log('Real-time order update:', data);
+        fetchData();
+      });
 
-    socket.on('wasteUpdate', (data) => {
-      console.log('Real-time waste update:', data);
-      fetchData();
-    });
+      socket.on('wasteUpdate', (data) => {
+        console.log('Real-time waste update:', data);
+        fetchData();
+      });
 
-    socket.on('riderUpdate', (data) => {
-      console.log('Real-time rider update:', data);
-      fetchData();
-    });
+      socket.on('riderUpdate', (data) => {
+        console.log('Real-time rider update:', data);
+        fetchData();
+      });
+    }
 
     fetchData();
 
     return () => {
-      socket.disconnect();
+      if (socket) {
+        socket.disconnect();
+      }
     };
   }, []);
 

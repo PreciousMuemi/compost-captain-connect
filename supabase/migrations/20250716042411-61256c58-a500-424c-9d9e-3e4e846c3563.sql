@@ -169,3 +169,170 @@ CREATE TRIGGER update_orders_updated_at
 -- Insert initial inventory record
 INSERT INTO public.inventory (raw_waste_kg, processed_manure_kg, pellets_ready_kg)
 VALUES (0, 0, 0);
+
+-- Add processing_batches table for supply chain traceability
+CREATE TABLE public.processing_batches (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    batch_number TEXT UNIQUE NOT NULL,
+    waste_report_ids UUID[] NOT NULL,
+    total_input_weight DECIMAL(10,2) NOT NULL,
+    total_output_weight DECIMAL(10,2) DEFAULT 0,
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'drying', 'crushing', 'cleaning', 'pelletizing', 'packaged', 'completed')),
+    qr_code TEXT UNIQUE,
+    traceability_data JSONB,
+    started_at TIMESTAMP WITH TIME ZONE,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Add batch_id to waste_reports for linking
+ALTER TABLE public.waste_reports 
+ADD COLUMN batch_id UUID REFERENCES public.processing_batches(id);
+
+-- Add processing_steps table for detailed tracking
+CREATE TABLE public.processing_steps (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    batch_id UUID REFERENCES public.processing_batches(id) ON DELETE CASCADE,
+    step_name TEXT NOT NULL,
+    step_order INTEGER NOT NULL,
+    start_time TIMESTAMP WITH TIME ZONE,
+    end_time TIMESTAMP WITH TIME ZONE,
+    operator_id UUID REFERENCES public.profiles(id),
+    quality_metrics JSONB,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Add products table for final pellets
+CREATE TABLE public.products (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    batch_id UUID REFERENCES public.processing_batches(id),
+    name TEXT NOT NULL,
+    description TEXT,
+    price_per_kg DECIMAL(10,2) NOT NULL,
+    available_kg DECIMAL(10,2) DEFAULT 0,
+    qr_code TEXT UNIQUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Add product_orders table for sales
+CREATE TABLE public.product_orders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_id UUID REFERENCES public.products(id),
+    customer_id UUID REFERENCES public.customers(id),
+    quantity_kg DECIMAL(10,2) NOT NULL,
+    total_amount DECIMAL(10,2) NOT NULL,
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'delivered', 'cancelled')),
+    delivery_address TEXT,
+    assigned_rider_id UUID REFERENCES public.profiles(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Enable RLS for new tables
+ALTER TABLE public.processing_batches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.processing_steps ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.product_orders ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for processing_batches
+CREATE POLICY "Admin and dispatch can manage processing batches" ON public.processing_batches
+    FOR ALL USING (
+        public.has_role(auth.uid(), 'admin') OR 
+        public.has_role(auth.uid(), 'dispatch')
+    );
+
+-- RLS Policies for processing_steps
+CREATE POLICY "Admin and dispatch can manage processing steps" ON public.processing_steps
+    FOR ALL USING (
+        public.has_role(auth.uid(), 'admin') OR 
+        public.has_role(auth.uid(), 'dispatch')
+    );
+
+-- RLS Policies for products
+CREATE POLICY "Admin and dispatch can manage products" ON public.products
+    FOR ALL USING (
+        public.has_role(auth.uid(), 'admin') OR 
+        public.has_role(auth.uid(), 'dispatch')
+    );
+
+CREATE POLICY "Everyone can view products" ON public.products
+    FOR SELECT USING (true);
+
+-- RLS Policies for product_orders
+CREATE POLICY "Admin and dispatch can manage product orders" ON public.product_orders
+    FOR ALL USING (
+        public.has_role(auth.uid(), 'admin') OR 
+        public.has_role(auth.uid(), 'dispatch')
+    );
+
+CREATE POLICY "Customers can view their own orders" ON public.product_orders
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM public.customers
+            WHERE customers.id = product_orders.customer_id
+            AND customers.phone_number = (
+                SELECT phone_number FROM public.profiles WHERE user_id = auth.uid()
+            )
+        )
+    );
+
+-- Create triggers for updated_at
+CREATE TRIGGER update_processing_batches_updated_at
+    BEFORE UPDATE ON public.processing_batches
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER update_products_updated_at
+    BEFORE UPDATE ON public.products
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER update_product_orders_updated_at
+    BEFORE UPDATE ON public.product_orders
+    FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+-- Add function to generate QR codes
+CREATE OR REPLACE FUNCTION public.generate_qr_code(batch_number TEXT)
+RETURNS TEXT
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN 'QR-BATCH-' || batch_number || '-' || EXTRACT(EPOCH FROM NOW())::TEXT;
+END;
+$$;
+
+-- Add function to create product from completed batch
+CREATE OR REPLACE FUNCTION public.create_product_from_batch(batch_id UUID)
+RETURNS UUID
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    product_id UUID;
+    batch_record RECORD;
+BEGIN
+    SELECT * INTO batch_record FROM public.processing_batches WHERE id = batch_id;
+    
+    IF batch_record.status != 'completed' THEN
+        RAISE EXCEPTION 'Batch must be completed before creating product';
+    END IF;
+    
+    INSERT INTO public.products (
+        batch_id,
+        name,
+        description,
+        price_per_kg,
+        available_kg,
+        qr_code
+    ) VALUES (
+        batch_id,
+        'Organic Manure Pellets',
+        'High-quality organic manure pellets made from farm waste',
+        50.00, -- Default price per kg
+        batch_record.total_output_weight,
+        batch_record.qr_code
+    ) RETURNING id INTO product_id;
+    
+    RETURN product_id;
+END;
+$$;

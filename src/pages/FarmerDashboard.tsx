@@ -21,6 +21,8 @@ interface FarmerStats {
   completedReports: number;
   totalOrders: number;
   totalSpent: number;
+  processingReports: number;
+  traceableBatches: number;
 }
 
 interface WasteReport {
@@ -51,6 +53,8 @@ export default function FarmerDashboard() {
     completedReports: 0,
     totalOrders: 0,
     totalSpent: 0,
+    processingReports: 0,
+    traceableBatches: 0,
   });
   const [recentReports, setRecentReports] = useState<WasteReport[]>([]);
   const [products, setProducts] = useState<Product[]>([]);

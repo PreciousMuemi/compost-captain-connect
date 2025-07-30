@@ -83,9 +83,35 @@ interface NotificationItem {
   read: boolean;
 }
 
+interface WasteReport {
+  id: string;
+  farmer_id: string;
+  waste_type: string;
+  quantity_kg: number;
+  location: string;
+  status: string;
+  created_at: string;
+  farmer?: {
+    full_name: string;
+    phone_number: string;
+    location: string;
+  };
+}
+
+interface ProcessingBatch {
+  id: string;
+  batch_number: string;
+  waste_report_ids: string[];
+  total_input_weight: number;
+  total_output_weight: number;
+  status: string;
+  qr_code: string;
+  created_at: string;
+  waste_reports?: WasteReport[];
+}
+
 // const socket = io("http://localhost:4000"); // Use your server URL
 // Temporarily disabled socket.io connection until server is set up
-// now make dispatch work,,in real time  and connect with admin for tasks,
 const socket = null;
 
 export default function DispatchDashboard() {
@@ -97,6 +123,8 @@ export default function DispatchDashboard() {
   const [riders, setRiders] = useState<Rider[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [wasteReports, setWasteReports] = useState<WasteReport[]>([]);
+  const [processingBatches, setProcessingBatches] = useState<ProcessingBatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedRider, setSelectedRider] = useState<string>("");
@@ -177,6 +205,34 @@ export default function DispatchDashboard() {
           type: (["low_stock", "failed_delivery", "rider_issue", "general"] as NotificationItem["type"][]).includes(n.type) ? n.type : "general"
         }))
       );
+
+      // Fetch waste reports for pickup assignment
+      const { data: wasteReportsData } = await supabase
+        .from('waste_reports')
+        .select(`
+          *,
+          farmer:profiles(full_name, phone_number, location)
+        `)
+        .eq('status', 'reported')
+        .order('created_at', { ascending: false });
+
+      // Fetch processing batches
+      const { data: processingBatchesData } = await supabase
+        .from('processing_batches')
+        .select(`
+          *,
+          waste_reports (
+            id,
+            waste_type,
+            quantity_kg,
+            location,
+            farmer:profiles(full_name, phone_number)
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      setWasteReports(wasteReportsData || []);
+      setProcessingBatches(processingBatchesData || []);
       
     } catch (error) {
       console.error('Error fetching dispatch data:', error);
@@ -255,6 +311,58 @@ export default function DispatchDashboard() {
       toast({
         title: "Error",
         description: "Failed to assign rider",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const assignRiderToWasteReport = async (reportId: string, riderId: string) => {
+    try {
+      const { error } = await supabase
+        .from('waste_reports')
+        .update({ 
+          assigned_driver_id: riderId,
+          status: 'scheduled'
+        })
+        .eq('id', reportId);
+
+      if (error) throw error;
+
+      // Get report details for notification
+      const { data: report } = await supabase
+        .from('waste_reports')
+        .select('farmer_id, waste_type, quantity_kg, profiles(full_name, phone_number)')
+        .eq('id', reportId)
+        .single();
+
+      const { data: rider } = await supabase
+        .from('riders')
+        .select('name, phone_number')
+        .eq('id', riderId)
+        .single();
+
+      if (report && rider) {
+        // Send notification to farmer
+        await supabase.from('notifications').insert({
+          recipient_id: report.farmer_id,
+          type: 'pickup_scheduled',
+          title: 'Waste Pickup Scheduled',
+          message: `Rider ${rider.name} (${rider.phone_number}) will collect your ${report.quantity_kg}kg of ${report.waste_type} today.`,
+          related_entity_id: reportId
+        });
+
+        toast({
+          title: "Success",
+          description: `Rider assigned to waste pickup. Farmer ${report.profiles?.full_name} will be notified.`,
+        });
+      }
+      
+      fetchDispatchData();
+    } catch (error) {
+      console.error('Error assigning rider to waste report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to assign rider to waste pickup",
         variant: "destructive",
       });
     }
@@ -619,6 +727,159 @@ export default function DispatchDashboard() {
           {/* Map View */}
           <DispatchMap orders={orders} riders={riders} />
         </div>
+
+        {/* Waste Pickup Management */}
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Truck className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="text-lg sm:text-xl">Waste Pickup Management</span>
+                </CardTitle>
+                <CardDescription>Assign riders to collect waste from farmers</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4 max-h-96 overflow-y-auto">
+              {wasteReports.map((report) => (
+                <div key={report.id} className="border rounded-lg p-3 sm:p-4 space-y-3">
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="font-medium text-sm sm:text-base">Waste Report #{report.id.slice(-6)}</h3>
+                        <Badge className="bg-blue-100 text-blue-800 text-xs">
+                          {report.waste_type.replace('_', ' ')}
+                        </Badge>
+                      </div>
+                      <p className="text-xs sm:text-sm text-gray-600">
+                        {report.quantity_kg} kg • {report.location}
+                      </p>
+                      {report.farmer && (
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 mt-2 text-xs text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            {report.farmer.full_name}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Phone className="h-3 w-3" />
+                            {report.farmer.phone_number}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2 w-full sm:w-auto">
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Select 
+                          value={selectedRider} 
+                          onValueChange={setSelectedRider}
+                        >
+                          <SelectTrigger className="w-full sm:w-[120px] text-xs">
+                            <SelectValue placeholder="Assign rider" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {riders
+                              .filter(r => r.status === 'available')
+                              .map(rider => (
+                                <SelectItem key={rider.id} value={rider.id}>
+                                  {rider.name}
+                                </SelectItem>
+                              ))
+                            }
+                          </SelectContent>
+                        </Select>
+                        <Button 
+                          size="sm" 
+                          onClick={() => selectedRider && assignRiderToWasteReport(report.id, selectedRider)}
+                          disabled={!selectedRider}
+                          className="w-full sm:w-auto"
+                        >
+                          Assign Pickup
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {wasteReports.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <Package className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p>No waste reports pending pickup</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Processing Batches Overview */}
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Factory className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="text-lg sm:text-xl">Processing Batches</span>
+                </CardTitle>
+                <CardDescription>Monitor waste processing and pellet production</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4 max-h-96 overflow-y-auto">
+              {processingBatches.map((batch) => (
+                <div key={batch.id} className="border rounded-lg p-3 sm:p-4 space-y-3">
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="font-medium text-sm sm:text-base">{batch.batch_number}</h3>
+                        <Badge className={`${getStatusColor(batch.status)} text-xs`}>
+                          {batch.status}
+                        </Badge>
+                      </div>
+                      <p className="text-xs sm:text-sm text-gray-600">
+                        Input: {batch.total_input_weight} kg • Output: {batch.total_output_weight || 0} kg
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <QrCode className="h-3 w-3 text-gray-400" />
+                        <span className="text-xs text-gray-500">{batch.qr_code}</span>
+                      </div>
+                      {batch.waste_reports && batch.waste_reports.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-xs text-gray-500 mb-1">Contributing Farmers:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {batch.waste_reports.map((report, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {report.farmer?.full_name || 'Unknown'}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2 w-full sm:w-auto">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => window.open(`/processing`, '_blank')}
+                        className="w-full sm:w-auto"
+                      >
+                        <Eye className="h-3 w-3 mr-1" />
+                        View Details
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {processingBatches.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <Factory className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p>No processing batches found</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

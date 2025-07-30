@@ -8,6 +8,7 @@ import { Users, Package, TrendingUp, DollarSign, Truck, ShoppingCart, Send, Mess
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useToast } from "@/hooks/use-toast";
+import BlockchainStatus from "@/components/BlockchainStatus";
 
 interface AdminStats {
   totalFarmers: number;
@@ -16,6 +17,8 @@ interface AdminStats {
   pendingReports: number;
   totalOrders: number;
   totalRevenue: number;
+  totalProcessingBatches: number;
+  totalProducts: number;
 }
 
 export default function AdminDashboard() {
@@ -28,6 +31,8 @@ export default function AdminDashboard() {
     pendingReports: 0,
     totalOrders: 0,
     totalRevenue: 0,
+    totalProcessingBatches: 0,
+    totalProducts: 0,
   });
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,12 +48,16 @@ export default function AdminDashboard() {
         { data: farmers },
         { data: reports },
         { data: payments },
-        { data: orders }
+        { data: orders },
+        { data: processingBatches },
+        { data: products }
       ] = await Promise.all([
         supabase.from('profiles').select('id').eq('role', 'farmer'),
         supabase.from('waste_reports').select('*'),
         supabase.from('payments').select('amount, status'),
-        supabase.from('orders').select('total_amount, status, created_at')
+        supabase.from('orders').select('total_amount, status, created_at'),
+        supabase.from('processing_batches').select('*'),
+        supabase.from('products').select('*')
       ]);
 
       const pendingReports = reports?.filter(r => r.status === 'reported' || r.status === 'scheduled').length || 0;
@@ -62,6 +71,8 @@ export default function AdminDashboard() {
         pendingReports,
         totalOrders: orders?.length || 0,
         totalRevenue,
+        totalProcessingBatches: processingBatches?.length || 0,
+        totalProducts: products?.length || 0,
       });
 
       // Recent activity - combine reports and orders
@@ -350,6 +361,18 @@ export default function AdminDashboard() {
             icon={TrendingUp}
             description="From product sales"
           />
+          <StatCard
+            title="Processing Batches"
+            value={stats.totalProcessingBatches.toString()}
+            icon={Factory}
+            description="Active processing"
+          />
+          <StatCard
+            title="Products Available"
+            value={stats.totalProducts.toString()}
+            icon={Package}
+            description="Ready for sale"
+          />
         </div>
 
         {/* Pending Waste Reports - B2C Payouts */}
@@ -371,7 +394,11 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* Recent Activity */}
+        {/* Blockchain Status */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <BlockchainStatus />
+          
+          {/* Recent Activity */}
           <Card className="shadow-lg border-0 bg-white dark:bg-gray-800">
             <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-b border-gray-200 dark:border-gray-700">
               <CardTitle className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
